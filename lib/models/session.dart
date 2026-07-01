@@ -6,7 +6,6 @@ class Session {
   final DateTime date;
   final String time;
   final String status;
-  final String description;
 
   Session({
     required this.id,
@@ -16,6 +15,5 @@ class Session {
     required this.date,
     required this.time,
     required this.status,
-    required this.description,
   });
 }

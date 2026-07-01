@@ -5,9 +5,6 @@ class Mentor {
   final String imageUrl;
   final double rating;
   final int reviewCount;
-  final List<String> subjects;
-  final String bio;
-  final List<String> availability;
   final bool isOnline;
   final int sessionCount;
 
@@ -18,9 +15,6 @@ class Mentor {
     required this.imageUrl,
     required this.rating,
     required this.reviewCount,
-    required this.subjects,
-    required this.bio,
-    required this.availability,
     required this.isOnline,
     required this.sessionCount,
   });
