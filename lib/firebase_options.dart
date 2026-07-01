@@ -8,9 +8,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'Web is not configured for this app. Please run on an Android emulator.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,5 +26,14 @@ class DefaultFirebaseOptions {
     messagingSenderId: '755261339439',
     projectId: 'mbap-6e9d4',
     storageBucket: 'mbap-6e9d4.firebasestorage.app',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyAKi4Df1dhd3CfR9SZFl24NNIKUIKA-ekw',
+    appId: '1:755261339439:web:499fc56e15b7cc598a93da',
+    messagingSenderId: '755261339439',
+    projectId: 'mbap-6e9d4',
+    authDomain: 'mbap-6e9d4.firebaseapp.com',
+    storageBucket: 'mbap-6e9d4.firebasestorage.app',
+    measurementId: 'G-FL3KR9CHZY',
   );
 }

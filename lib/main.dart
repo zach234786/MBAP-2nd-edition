@@ -164,10 +164,54 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     });
   }
 
-  /// Opens a Settings sheet with the two account-management features:
-  /// change password + email verification.
+  /// Confirms with the user, then permanently deletes their Firebase account.
+  /// On success the auth state changes and AuthGate returns to the login screen.
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.darkCardBg,
+        title: const Text(
+          'Delete Account',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: const Text(
+          'This permanently deletes your account. This cannot be undone.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: AppTheme.tpRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(authServiceProvider).deleteAccount();
+      // Success: user is signed out, AuthGate swaps back to the login screen.
+    } catch (e) {
+      if (mounted) _showSnackBar(AuthService.friendlyError(e));
+    }
+  }
+
+  /// Opens a Settings sheet with the account-management features:
+  /// change password, email verification, and delete account.
   void _openSettings() {
     final authService = ref.read(authServiceProvider);
+    // Show the sheet immediately, then refresh the user in the background so
+    // the "Email Verified" status updates once fresh data arrives (it's cached
+    // locally until we reload). A one-time guard keeps it to a single reload.
+    var reloadStarted = false;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.darkCardBg,
@@ -175,8 +219,18 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            if (!reloadStarted) {
+              reloadStarted = true;
+              authService.reloadUser().then((_) {
+                if (sheetContext.mounted) setSheetState(() {});
+              }).catchError((_) {
+                // Ignore refresh failures; keep showing cached status.
+              });
+            }
+            return SafeArea(
+              child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Padding(
@@ -196,8 +250,8 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                     style: TextStyle(color: AppTheme.textPrimary)),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  if (authService.isAnonymous) {
-                    _showSnackBar('Sign up or login to change password');
+                  if (!authService.isEmailPasswordAccount) {
+                    _showSnackBar('Only available for email/password accounts');
                   } else {
                     Navigator.push(
                       context,
@@ -234,8 +288,8 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                 ),
                 onTap: () async {
                   Navigator.pop(sheetContext);
-                  if (authService.isAnonymous) {
-                    _showSnackBar('Sign up or login to verify email');
+                  if (!authService.isEmailPasswordAccount) {
+                    _showSnackBar('Only available for email/password accounts');
                   } else if (authService.isEmailVerified) {
                     _showSnackBar('Your email is already verified!');
                   } else {
@@ -248,9 +302,23 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                   }
                 },
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_forever, color: AppTheme.tpRed),
+                title: const Text(
+                  'Delete Account',
+                  style: TextStyle(color: AppTheme.tpRed),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _deleteAccount();
+                },
+              ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            );
+          },
         );
       },
     );

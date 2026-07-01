@@ -63,10 +63,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _continueAsGuest() async {
+  Future<void> _signInWithGitHub() async {
     setState(() => _isLoading = true);
     try {
-      await ref.read(authServiceProvider).signInAnonymously();
+      await ref.read(authServiceProvider).signInWithGitHub();
     } catch (e) {
       _showSnackBar(AuthService.friendlyError(e));
     } finally {
@@ -444,14 +444,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // Anonymous sign-in
+                              // GitHub sign-in
                               SizedBox(
                                 width: double.infinity,
                                 height: 48,
                                 child: OutlinedButton.icon(
-                                  onPressed: _isLoading ? null : _continueAsGuest,
-                                  icon: const Icon(Icons.person_outline, color: AppTheme.tpRed),
-                                  label: const Text('Continue as Guest'),
+                                  onPressed:
+                                      _isLoading ? null : _signInWithGitHub,
+                                  icon: const Icon(Icons.code,
+                                      color: AppTheme.tpRed),
+                                  label: const Text('Continue with GitHub'),
                                 ),
                               ),
                               const SizedBox(height: 24),

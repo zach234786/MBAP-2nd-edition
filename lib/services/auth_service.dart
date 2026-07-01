@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -64,9 +65,18 @@ class AuthService {
     }
   }
 
-  /// LOGOUT the current user (also signs out of Google if used).
+  /// LOGOUT the current user (also signs out of Google on mobile if used).
   Future<void> logout() async {
-    await GoogleSignIn().signOut();
+    // google_sign_in is only wired up on mobile. On web we sign in with
+    // Firebase's popup instead, and calling GoogleSignIn().signOut() there
+    // throws (no web client id), which would block the Firebase sign-out.
+    if (!kIsWeb) {
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {
+        // Best effort - never let this stop the Firebase sign-out below.
+      }
+    }
     await _auth.signOut();
   }
 
@@ -85,8 +95,22 @@ class AuthService {
   /// Returns true if the signed-in user has verified their email.
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
 
-  /// Returns true if the user is signed in anonymously (guest).
-  bool get isAnonymous => _auth.currentUser?.isAnonymous ?? false;
+  /// Refreshes the current user's data from the Firebase servers. Needed
+  /// because [isEmailVerified] is cached locally, so it won't reflect an email
+  /// verified on another device until we reload.
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+  }
+
+  /// Returns true if the user signed in with email + password (i.e. they have
+  /// the 'password' provider), as opposed to a federated provider like Google
+  /// or GitHub. Email-only features (change password, resend verification) are
+  /// gated on this — federated accounts have no password to reauthenticate
+  /// with, even if they expose an email address.
+  bool get isEmailPasswordAccount =>
+      _auth.currentUser?.providerData
+          .any((info) => info.providerId == 'password') ??
+      false;
 
   /// ACCOUNT MANAGEMENT (extra feature 2): change the password.
   /// Requires reauthentication first with the old password.
@@ -124,8 +148,43 @@ class AuthService {
     }
   }
 
+  /// ACCOUNT MANAGEMENT (extra feature 3): permanently delete the account
+  /// from Firebase. Deleting also signs the user out, so the AuthGate returns
+  /// to the login screen automatically.
+  ///
+  /// Firebase requires a RECENT login to delete. If the session is too old it
+  /// throws 'requires-recent-login', which the UI turns into a friendly
+  /// "log out and log back in" message.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(code: 'requires-recent-login');
+    }
+    try {
+      await user.delete();
+    } catch (e) {
+      // The known type-cast bug can throw even when the delete succeeded. If
+      // the account is actually gone, currentUser is now null - only surface
+      // real failures (e.g. requires-recent-login, which leaves the user set).
+      if (_auth.currentUser != null) rethrow;
+    }
+  }
+
   /// AUTH METHOD not taught in class (1): Google Sign-in.
   Future<void> signInWithGoogle() async {
+    // On the web, the google_sign_in package's signIn() is not supported
+    // (it has no access token and needs a rendered button). Firebase's own
+    // popup flow handles Google sign-in directly in the browser instead.
+    if (kIsWeb) {
+      final googleProvider = GoogleAuthProvider();
+      try {
+        await _auth.signInWithPopup(googleProvider);
+      } catch (e) {
+        if (_auth.currentUser == null) rethrow;
+      }
+      return;
+    }
+
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
     if (googleUser == null) return; // user cancelled the popup
     final GoogleSignInAuthentication googleAuth =
@@ -141,11 +200,19 @@ class AuthService {
     }
   }
 
-  /// AUTH METHOD not taught in class (2): anonymous "Continue as Guest".
-  Future<void> signInAnonymously() async {
+  /// AUTH METHOD not taught in class (2): GitHub Sign-in.
+  Future<void> signInWithGitHub() async {
+    final githubProvider = GithubAuthProvider();
     try {
-      await _auth.signInAnonymously();
+      if (kIsWeb) {
+        // On web, Firebase opens a GitHub OAuth popup.
+        await _auth.signInWithPopup(githubProvider);
+      } else {
+        // On mobile/desktop, Firebase opens a native OAuth web flow.
+        await _auth.signInWithProvider(githubProvider);
+      }
     } catch (e) {
+      // The known type-cast bug can throw even when sign-in actually worked.
       if (_auth.currentUser == null) rethrow;
     }
   }
@@ -168,7 +235,16 @@ class AuthService {
         case 'weak-password':
           return 'Password is too weak (use at least 6 characters).';
         case 'requires-recent-login':
-          return 'Please log out and log in again before changing your password.';
+          return 'For security, please log out and log in again, then try again.';
+        case 'account-exists-with-different-credential':
+          return 'An account already exists with the same email but a different sign-in method.';
+        case 'popup-closed-by-user':
+        case 'cancelled-popup-request':
+          return 'Sign-in was cancelled.';
+        case 'operation-not-allowed':
+          return 'This sign-in method is not enabled. Please contact support.';
+        case 'too-many-requests':
+          return 'Too many attempts. Please wait a while and try again.';
         case 'network-request-failed':
           return 'No internet connection. Please try again.';
         default:

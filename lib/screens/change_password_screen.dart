@@ -40,8 +40,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   Future<void> _changePassword() async {
     final authService = ref.read(authServiceProvider);
-    if (authService.isAnonymous) {
-      _showSnackBar('Sign up or login to change password');
+    if (!authService.isEmailPasswordAccount) {
+      _showSnackBar('Only available for email/password accounts');
       return;
     }
 
