@@ -12,7 +12,6 @@ class SampleData {
         rating: 4.8,
         reviewCount: 45,
         isOnline: true,
-        sessionCount: 87,
       ),
       Mentor(
         id: '2',
@@ -21,7 +20,6 @@ class SampleData {
         rating: 4.9,
         reviewCount: 62,
         isOnline: true,
-        sessionCount: 102,
       ),
       Mentor(
         id: '3',
@@ -30,7 +28,6 @@ class SampleData {
         rating: 4.6,
         reviewCount: 38,
         isOnline: false,
-        sessionCount: 71,
       ),
       Mentor(
         id: '4',
@@ -39,7 +36,6 @@ class SampleData {
         rating: 4.7,
         reviewCount: 51,
         isOnline: true,
-        sessionCount: 94,
       ),
     ];
   }

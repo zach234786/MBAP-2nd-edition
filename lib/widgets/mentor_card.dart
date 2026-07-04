@@ -92,6 +92,13 @@ class MentorCard extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
+                Text(
+                  ' (${mentor.reviewCount})',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ],

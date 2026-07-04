@@ -3,8 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tpmentorship/firebase_options.dart';
-import 'package:tpmentorship/data/sample_data.dart';
-import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
@@ -161,23 +159,74 @@ class MainNavigator extends ConsumerStatefulWidget {
 class _MainNavigatorState extends ConsumerState<MainNavigator> {
   int _selectedIndex = 0;
 
-  /// The mentor whose card was last tapped (shown on the Mentor Profile tab),
-  /// and which tab to return to when the user taps back on that profile.
-  Mentor? _selectedMentor;
-  int _mentorProfileReturnIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame, ask Google/GitHub users without a display name
+    // what the app should call them. Email/password users already set a
+    // name on the register form, so they are never prompted.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _promptForNameIfNeeded());
+  }
+
+  /// The name the app greets the user with (from Firebase's displayName).
+  String get _greetingName {
+    final name = ref.read(authServiceProvider).displayName;
+    return name.isNotEmpty ? name : 'Student';
+  }
+
+  Future<void> _promptForNameIfNeeded() async {
+    final authService = ref.read(authServiceProvider);
+    if (!mounted ||
+        authService.isEmailPasswordAccount ||
+        authService.displayName.isNotEmpty) {
+      return;
+    }
+
+    final controller = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false, // the app needs a name to greet them with
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.darkCardBg,
+        title: const Text(
+          'What should TPMentorship call you?',
+          style: TextStyle(color: AppTheme.textPrimary, fontSize: 18),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: AppTheme.textPrimary),
+          decoration: const InputDecoration(hintText: 'Your name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isEmpty) return; // need a name
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Save',
+                style: TextStyle(
+                    color: AppTheme.tpRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    final name = controller.text.trim();
+    controller.dispose();
+    if (name.isEmpty) return;
+    try {
+      await ref.read(authServiceProvider).updateDisplayName(name);
+    } catch (e) {
+      if (mounted) _showSnackBar(AuthService.friendlyError(e));
+    }
+    // Rebuild so the Home greeting and Mentor Profile pick up the new name.
+    if (mounted) setState(() {});
+  }
 
   void _onNavItemTapped(int index) {
     setState(() => _selectedIndex = index);
-  }
-
-  /// Remembers which mentor was tapped and where the user came from, then
-  /// switches to the Mentor Profile tab.
-  void _openMentorProfile(Mentor mentor, {required int fromIndex}) {
-    setState(() {
-      _selectedMentor = mentor;
-      _mentorProfileReturnIndex = fromIndex;
-      _selectedIndex = 4;
-    });
   }
 
   void _showSnackBar(String message) {
@@ -366,7 +415,11 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
           index: _selectedIndex,
           children: [
             HomeScreen(
-              onMentorTap: (mentor) => _openMentorProfile(mentor, fromIndex: 0),
+              userName: _greetingName,
+              // Tapping a mentor card just shows a small popup for now -
+              // browsing OTHER mentors' profiles is Part 3 scope.
+              onMentorTap: (mentor) =>
+                  _showSnackBar("Opening ${mentor.name}'s profile"),
               onSessionTap: () => _showSnackBar('Session details'),
               onViewAllSessions: () => _showSnackBar('Viewing all sessions'),
               onViewAllMessages: () => setState(() => _selectedIndex = 2),
@@ -374,13 +427,15 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
               onNavigateToMessages: () => setState(() => _selectedIndex = 2),
             ),
             SearchScreen(
-              onMentorTap: (mentor) => _openMentorProfile(mentor, fromIndex: 1),
+              onMentorTap: (mentor) =>
+                  _showSnackBar("Opening ${mentor.name}'s profile"),
               onBack: () => setState(() => _selectedIndex = 0),
             ),
             MessagesScreen(
               onBack: () => setState(() => _selectedIndex = 0),
             ),
             ProfileScreen(
+              userName: _greetingName,
               onEditProfile: () => _showSnackBar('Edit profile - coming soon'),
               onSettings: _openSettings,
               onLogout: _logout,
@@ -388,11 +443,10 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
               onBack: () => setState(() => _selectedIndex = 0),
             ),
             MentorProfileScreen(
-              // Falls back to the first sample mentor when the tab is opened
-              // directly from the bottom bar (no card tapped yet).
-              mentor: _selectedMentor ?? SampleData.getMentors().first,
-              onBack: () =>
-                  setState(() => _selectedIndex = _mentorProfileReturnIndex),
+              // The tab shows the LOGGED-IN user's own mentor profile,
+              // greeting them by their chosen display name.
+              userName: _greetingName,
+              onBack: () => setState(() => _selectedIndex = 0),
             ),
           ],
         ),

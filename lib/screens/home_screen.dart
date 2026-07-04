@@ -6,8 +6,11 @@ import 'package:tpmentorship/widgets/mentor_card.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  /// Called with the mentor whose card was tapped, so the navigator can show
-  /// that mentor's profile (not a hardcoded one).
+  /// The logged-in user's display name, shown in the greeting.
+  final String userName;
+
+  /// Called with the mentor whose card was tapped, so the navigator can react
+  /// to the specific mentor (currently a popup with their name).
   final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onSessionTap;
   final VoidCallback? onViewAllSessions;
@@ -17,6 +20,7 @@ class HomeScreen extends StatelessWidget {
 
   const HomeScreen({
     super.key,
+    required this.userName,
     this.onMentorTap,
     this.onSessionTap,
     this.onViewAllSessions,
@@ -114,14 +118,14 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Welcome
+          // Greeting - personalised with the logged-in user's display name.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: RichText(
-              text: const TextSpan(
+              text: TextSpan(
                 children: [
-                  TextSpan(
-                    text: 'Welcome back, ',
+                  const TextSpan(
+                    text: 'Hello ',
                     style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 24,
@@ -129,8 +133,8 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: 'John',
-                    style: TextStyle(
+                    text: userName,
+                    style: const TextStyle(
                       color: AppTheme.tpRed,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,

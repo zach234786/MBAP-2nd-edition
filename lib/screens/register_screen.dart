@@ -37,6 +37,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _isLoading = true);
     try {
       await ref.read(authServiceProvider).register(
+            name: _nameController.text,
             email: _emailController.text,
             password: _passwordController.text,
           );

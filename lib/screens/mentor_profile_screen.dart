@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:tpmentorship/data/sample_data.dart';
-import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
 
 class MentorProfileScreen extends StatelessWidget {
-  /// The mentor whose profile is shown - passed in by MainNavigator so the
-  /// screen shows whichever mentor card the user actually tapped.
-  final Mentor mentor;
+  /// This tab shows the LOGGED-IN user's own mentor profile. [userName] is
+  /// their chosen display name; the stats below it are placeholder content
+  /// until Part 3 binds them to Firestore.
+  final String userName;
   final VoidCallback? onBack;
 
-  const MentorProfileScreen({super.key, required this.mentor, this.onBack});
+  const MentorProfileScreen({super.key, required this.userName, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class MentorProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  'Mentor Profile',
+                  'My Mentor Profile',
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 24,
@@ -76,7 +76,7 @@ class MentorProfileScreen extends StatelessWidget {
                         height: 18,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: mentor.isOnline ? Colors.green : Colors.grey,
+                          color: Colors.green, // it's you - you're online
                           border: Border.all(color: AppTheme.darkCardBg, width: 2),
                         ),
                       ),
@@ -89,7 +89,7 @@ class MentorProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        mentor.name,
+                        userName,
                         style: const TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 16,
@@ -97,9 +97,9 @@ class MentorProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        '${mentor.specialization} Mentor',
-                        style: const TextStyle(
+                      const Text(
+                        'Coding Mentor',
+                        style: TextStyle(
                             color: AppTheme.textSecondary, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
@@ -107,18 +107,18 @@ class MentorProfileScreen extends StatelessWidget {
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 14),
                           const SizedBox(width: 4),
-                          Text(
-                            '${mentor.rating}',
-                            style: const TextStyle(
+                          const Text(
+                            '4.9',
+                            style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          Text(
-                            '(${mentor.reviewCount} Reviews)',
-                            style: const TextStyle(
+                          const Text(
+                            '(86 Reviews)',
+                            style: TextStyle(
                                 color: AppTheme.textSecondary, fontSize: 11),
                           ),
                           const SizedBox(width: 8),
@@ -130,9 +130,9 @@ class MentorProfileScreen extends StatelessWidget {
                               border: Border.all(
                                   color: AppTheme.tpRed.withValues(alpha: 0.4)),
                             ),
-                            child: Text(
-                              '${mentor.sessionCount} Sessions',
-                              style: const TextStyle(
+                            child: const Text(
+                              '107 Sessions',
+                              style: TextStyle(
                                 color: AppTheme.tpRed,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10,

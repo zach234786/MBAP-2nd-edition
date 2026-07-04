@@ -4,6 +4,9 @@ import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 
 class ProfileScreen extends StatelessWidget {
+  /// The logged-in user's display name, shown on the profile card.
+  final String userName;
+
   final VoidCallback? onEditProfile;
   final VoidCallback? onSettings;
   final VoidCallback? onLogout;
@@ -12,6 +15,7 @@ class ProfileScreen extends StatelessWidget {
 
   const ProfileScreen({
     super.key,
+    required this.userName,
     this.onEditProfile,
     this.onSettings,
     this.onLogout,
@@ -99,9 +103,9 @@ class ProfileScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'John Tay',
-                            style: TextStyle(
+                          Text(
+                            userName,
+                            style: const TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w800,

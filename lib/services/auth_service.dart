@@ -15,6 +15,20 @@ class AuthService {
   /// The currently signed-in user (or null if nobody is signed in).
   User? get currentUser => _auth.currentUser;
 
+  /// The name the app should call the user ('' when not set yet).
+  String get displayName => _auth.currentUser?.displayName?.trim() ?? '';
+
+  /// Saves the user's display name (what the app greets them with), then
+  /// reloads so the new name is available immediately.
+  Future<void> updateDisplayName(String name) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(code: 'requires-recent-login');
+    }
+    await user.updateDisplayName(name.trim());
+    await user.reload();
+  }
+
   /// There is a known firebase_auth bug where the native bridge ("Pigeon")
   /// throws a type-cast error even when the operation actually SUCCEEDED.
   /// This helper runs [action] and swallows that false error - but ONLY when
@@ -45,6 +59,7 @@ class AuthService {
   /// registering, the user is sent back to the login screen to log in
   /// manually (instead of being dropped straight into the app).
   Future<void> register({
+    required String name,
     required String email,
     required String password,
   }) async {
@@ -59,13 +74,17 @@ class AuthService {
           email: email.trim(),
           password: password,
         );
+        // Save the name from the register form so the app can greet the
+        // user with it after they log in (stored on Firebase's servers).
+        await credential.user?.updateDisplayName(name.trim());
         await credential.user?.sendEmailVerification();
       } catch (e) {
         // The known bug (see _ignoreKnownBugIf) can throw a type-cast error
         // even when the account WAS created. This is handled inline instead
         // of with the shared helper because the recovery path also has to
-        // re-send the verification email that the try block never reached.
+        // redo the name + verification steps the try block never reached.
         if (tempAuth.currentUser == null) rethrow;
+        await tempAuth.currentUser?.updateDisplayName(name.trim());
         await tempAuth.currentUser?.sendEmailVerification();
       }
     } finally {

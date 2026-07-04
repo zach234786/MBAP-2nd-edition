@@ -151,9 +151,9 @@ MainNavigator shows (the 5-tab app)
 
 ### 5.1 `main.dart` — the entry point and navigation brain
 
-**`_navigatorKey` (line 24):** A `GlobalKey<NavigatorState>` given to `MaterialApp`. **Why?** When the user signs out, `AuthGate` swaps the home widget — but any screen pushed with `Navigator.push` (like Change Password) would stay on top of it. `AuthGate` uses this key to pop back to the first route on sign-out, so a logged-out user can never be left stranded on an authed screen.
+**`_navigatorKey` (line 22):** A `GlobalKey<NavigatorState>` given to `MaterialApp`. **Why?** When the user signs out, `AuthGate` swaps the home widget — but any screen pushed with `Navigator.push` (like Change Password) would stay on top of it. `AuthGate` uses this key to pop back to the first route on sign-out, so a logged-out user can never be left stranded on an authed screen.
 
-**`main()` function (lines 26–34):**
+**`main()` function (lines 24–32):**
 ```dart
 WidgetsFlutterBinding.ensureInitialized();   // Flutter must be ready before native calls
 await Firebase.initializeApp(...);            // connect to Firebase project
@@ -163,14 +163,14 @@ runApp(const ProviderScope(child: MyApp()));  // ProviderScope = turn on Riverpo
 - **Why `await`?** The app cannot function until Firebase is connected, so we block until it's done.
 - **What is `ProviderScope`?** It's the Riverpod root. Every provider lives inside it. Without it, `ref.watch`/`ref.read` would throw. It must wrap the *entire* app, so it's at the very top.
 
-**`MyApp` (lines 36–52):** A `StatelessWidget` returning `MaterialApp`. Points to:
+**`MyApp` (lines 34–50):** A `StatelessWidget` returning `MaterialApp`. Points to:
 - `theme: AppTheme.darkTheme` — our centralized theme.
 - `home: const AuthGate()` — the first thing shown.
 - `debugShowCheckedModeBanner: false` — hides the "debug" ribbon for a clean demo.
 
-**`NoStretchScrollBehavior` (lines 55–73):** Custom scroll behavior that removes the bouncy overscroll glow. *Cosmetic polish.* If asked: "I overrode the default `MaterialScrollBehavior` to use `ClampingScrollPhysics` so scrolling stops firmly at the edges instead of stretching — it looks cleaner on web."
+**`NoStretchScrollBehavior` (lines 53–71):** Custom scroll behavior that removes the bouncy overscroll glow. *Cosmetic polish.* If asked: "I overrode the default `MaterialScrollBehavior` to use `ClampingScrollPhysics` so scrolling stops firmly at the edges instead of stretching — it looks cleaner on web."
 
-**`AuthGate` (lines 78–118) — THE most important widget in the app:**
+**`AuthGate` (lines 76–116) — THE most important widget in the app:**
 ```dart
 final authState = ref.watch(authStateProvider);
 return authState.when(
@@ -183,30 +183,32 @@ return authState.when(
 - `ref.watch(authStateProvider)` returns an `AsyncValue<User?>` — because the auth state comes from a *stream*, it has three states: `data`, `loading`, `error`.
 - `.when(...)` forces me to handle all three. **This is good practice** — I show a spinner while Firebase checks the cached session, an error screen if something breaks, and the right screen once I know the login state.
 - **Why a gate?** So there is ONE single source of truth for "is the user logged in?" No screen has to check auth itself.
-- **`ref.listen` (lines 86–90):** Besides *watching* the auth state to pick a screen, `AuthGate` also *listens* for the moment the user becomes null and pops any pushed routes via `_navigatorKey`. **`watch` rebuilds UI from state; `listen` runs a side effect when state changes** — a nice Riverpod distinction to mention.
+- **`ref.listen` (lines 84–88):** Besides *watching* the auth state to pick a screen, `AuthGate` also *listens* for the moment the user becomes null and pops any pushed routes via `_navigatorKey`. **`watch` rebuilds UI from state; `listen` runs a side effect when state changes** — a nice Riverpod distinction to mention.
 
-**`AuthFlow` (lines 121–151):** A `StatefulWidget` holding a `String _screen` variable ('login' / 'register' / 'forgot_password'). It swaps between the three auth screens using `setState`. The screens call callbacks like `onGoToRegister` to flip the string.
+**`AuthFlow` (lines 119–149):** A `StatefulWidget` holding a `String _screen` variable ('login' / 'register' / 'forgot_password'). It swaps between the three auth screens using `setState`. The screens call callbacks like `onGoToRegister` to flip the string.
 - **Why not use `Navigator.push` here?** Because these three screens are a self-contained flow *before* login. Using a simple state variable keeps them grouped without polluting the navigation stack. (Be ready to defend this — see Q&A Q7.)
 
-**`MainNavigator` (lines 154–413):** The logged-in shell.
-- It's a `ConsumerStatefulWidget` because it needs both **state** (`_selectedIndex` for the current tab, `_selectedMentor` for the tapped mentor) AND **provider access** (to call logout/delete).
-- **`IndexedStack` (line 365):** Holds all 5 screens at once, showing only the selected index.
+**`MainNavigator` (lines 152–466):** The logged-in shell.
+- It's a `ConsumerStatefulWidget` because it needs both **state** (`_selectedIndex` for the current tab) AND **provider access** (to call logout/delete and read the display name).
+- **`IndexedStack` (line 414):** Holds all 5 screens at once, showing only the selected index.
   - **CRITICAL to know:** *Why `IndexedStack` instead of just swapping widgets?* Because `IndexedStack` keeps all screens **alive** in memory. If you scroll down on Home, switch to Search, and come back, Home is still scrolled where you left it. If I used a plain conditional, each screen would be rebuilt from scratch and lose its state. (See Q&A Q2 — this is a favourite.)
-- **`BottomNavigationBar` (line 400):** 5 tabs (Home, Search, Messages, Profile, Mentor Profile). `currentIndex` is bound to `_selectedIndex`, `onTap` calls `_onNavItemTapped` which does `setState`.
-- **Callbacks passed to screens (lines 367–397):** Each screen gets functions like `onNavigateToSearch: () => setState(() => _selectedIndex = 1)`. This is how a button on the Home screen can switch tabs. **Why callbacks?** So screens don't need to know about the navigation bar — they just say "a mentor was tapped" and `MainNavigator` decides what to do. This keeps screens reusable and decoupled.
-- **`_openMentorProfile()` (lines 175–181):** Mentor taps pass the actual `Mentor` object (`ValueChanged<Mentor>` callbacks, not plain `VoidCallback`). This method remembers **which mentor** was tapped (`_selectedMentor`) and **which tab the user came from** (`_mentorProfileReturnIndex`), then switches to tab 4. So the Mentor Profile shows the mentor you actually tapped, and its back button returns to Home or Search — whichever you came from. *(Mention this as a fix you made after reviewing your own code — graders love that.)*
+- **`BottomNavigationBar` (line 453):** 5 tabs (Home, Search, Messages, Profile, Mentor Profile). `currentIndex` is bound to `_selectedIndex`, `onTap` calls `_onNavItemTapped` which does `setState`.
+- **Callbacks passed to screens (lines 416–450):** Each screen gets functions like `onNavigateToSearch: () => setState(() => _selectedIndex = 1)`. This is how a button on the Home screen can switch tabs. **Why callbacks?** So screens don't need to know about the navigation bar — they just say "a mentor was tapped" and `MainNavigator` decides what to do. This keeps screens reusable and decoupled.
+- **Mentor card taps:** Home and Search pass the tapped `Mentor` object up (`ValueChanged<Mentor>` callbacks, not plain `VoidCallback`), and `MainNavigator` shows a popup: *"Opening \<mentor name\>'s profile"*. It deliberately leads nowhere — browsing OTHER mentors' profiles is Part 3 scope, but the personalised popup proves the tap knows exactly which mentor was pressed.
+- **`_greetingName` (lines 173–176):** Reads the user's `displayName` from `AuthService` (falls back to 'Student' if empty) and feeds it to `HomeScreen` (the "Hello \<name\>" greeting), `ProfileScreen` (the profile card), and `MentorProfileScreen` (the user's own mentor profile).
+- **`_promptForNameIfNeeded()` (lines 178–230):** Runs once after the first frame (`initState` → `addPostFrameCallback`). If the user signed in with **Google/GitHub** and has **no display name yet**, it shows a non-dismissible dialog — *"What should TPMentorship call you?"* — saves the answer via `authService.updateDisplayName`, and rebuilds so the greeting updates instantly. Email/password users never see it because the register form already collected their name. **Why `addPostFrameCallback`?** You can't show a dialog while the first build is still in progress — this waits until the screen exists.
 
-**`_openSettings()` (lines 238–358):** Opens a `showModalBottomSheet` with the 3 account-management options.
+**`_openSettings()` (lines 287–411):** Opens a `showModalBottomSheet` with the 3 account-management options.
 - Uses `StatefulBuilder` so the sheet can rebuild itself independently (to refresh the "Email Verified" row).
-- **The clever bit (lines 253–260):** It shows the sheet *immediately*, then calls `authService.reloadUser()` in the background. When fresh data arrives, `setSheetState(() {})` rebuilds just the sheet. **Why?** `emailVerified` is cached locally by Firebase. If the user verified on another device, the app wouldn't know until it reloads. I reload in the background so there's no blocking "dead tap" — the sheet opens instantly and updates a moment later.
+- **The clever bit (lines 302–309):** It shows the sheet *immediately*, then calls `authService.reloadUser()` in the background. When fresh data arrives, `setSheetState(() {})` rebuilds just the sheet. **Why?** `emailVerified` is cached locally by Firebase. If the user verified on another device, the app wouldn't know until it reloads. I reload in the background so there's no blocking "dead tap" — the sheet opens instantly and updates a moment later.
 - Gates each feature on `authService.isEmailPasswordAccount` — a Google/GitHub user has no password, so "Change Password" would fail. Instead we show a friendly SnackBar.
 - When Change Password pushes `ForgotPasswordScreen`, it passes `backLabel: 'Back'` — because in that context tapping the link returns to Change Password, not to the login screen, so the default 'Back to Login' label would lie.
 
-**`_deleteAccount()` (lines 198–234):** Shows a confirmation `AlertDialog` (destructive action → always confirm), then calls `deleteAccount()`. On success, Firebase signs the user out → `authStateChanges` fires → `AuthGate` returns to login automatically. No manual navigation needed.
+**`_deleteAccount()` (lines 247–283):** Shows a confirmation `AlertDialog` (destructive action → always confirm), then calls `deleteAccount()`. On success, Firebase signs the user out → `authStateChanges` fires → `AuthGate` returns to login automatically. No manual navigation needed.
 
-**`_logout()` (lines 190–194):** Calls `authService.logout()`. Uses `.catchError` to show a SnackBar if it fails.
+**`_logout()` (lines 239–243):** Calls `authService.logout()`. Uses `.catchError` to show a SnackBar if it fails.
 
-**`_showSnackBar()` (lines 183–188):** Guards with `if (!mounted) return;` (some callers await first — the State could be disposed by the time the call returns), then delegates to the shared `showAppSnackBar` helper in `lib/utils/snackbar_helper.dart` so feedback looks identical on every screen.
+**`_showSnackBar()` (lines 232–237):** Guards with `if (!mounted) return;` (some callers await first — the State could be disposed by the time the call returns), then delegates to the shared `showAppSnackBar` helper in `lib/utils/snackbar_helper.dart` so feedback looks identical on every screen.
 
 ---
 
@@ -218,7 +220,9 @@ This class wraps every Firebase Auth call. The UI only ever calls these methods.
 
 **`currentUser` getter (line 16):** The synchronous "who's logged in right now" — returns `User?`.
 
-**`_ignoreKnownBugIf()` (lines 24–36) + `_isKnownBugError()` (lines 38–39) — the centralised Pigeon-bug handling:**
+**`displayName` getter (line 19) + `updateDisplayName()` (lines 23–31):** The name the app greets the user with. Firebase stores a `displayName` on every user account (on its servers, so it follows the user across devices). The getter returns it ('' when unset); the updater saves a new one and calls `user.reload()` so the change shows immediately. **Where does the name come from?** Email/password users: the register form. Google/GitHub users without a name: the first-login prompt in `MainNavigator`.
+
+**`_ignoreKnownBugIf()` (lines 38–50) + `_isKnownBugError()` (lines 52–53) — the centralised Pigeon-bug handling:**
 ```dart
 Future<void> _ignoreKnownBugIf({
   required Future<void> Function() action,
@@ -231,22 +235,24 @@ Future<void> _ignoreKnownBugIf({
 - `_isKnownBugError()` recognises the bug by its error *shape* — used by `changePassword`, whose success can't be confirmed by checking `currentUser`.
 - **Why a helper?** If Firebase fixes the bug, I update one place instead of six. *(This was a refactor after reviewing my own code — a great "good programming practices" talking point.)*
 
-**`register()` (lines 47–72) — the trickiest method, KNOW IT COLD:**
+**`register()` (lines 61–95) — the trickiest method, KNOW IT COLD:**
 ```dart
 final tempApp = await Firebase.initializeApp(name: 'registrationTemp_...', options: ...);
 final tempAuth = FirebaseAuth.instanceFor(app: tempApp);
 await tempAuth.createUserWithEmailAndPassword(...);
+await credential.user?.updateDisplayName(name.trim());   // save their name
 await credential.user?.sendEmailVerification();
 // ... finally: await tempApp.delete();
 ```
 - **THE key question: "Why create a whole separate Firebase app just to register?"**
   - Answer: `createUserWithEmailAndPassword` **automatically signs the new user in** on the default Firebase instance. That would drop them straight into the app. I want them to register, then go *back to the login screen* and log in manually (which is the expected UX and also confirms they know their password). By creating the account on a **temporary secondary Firebase app**, the main app's auth state is never touched. Then I delete the temp app in a `finally` block so it's always cleaned up.
+- **Why `updateDisplayName()` here?** The name typed into the register form is saved onto the Firebase account, so after they log in the app can greet them with it ("Hello \<name\>"). It's stored server-side — it survives reinstalls and other devices.
 - **Why `sendEmailVerification()` right after?** So the verification email goes out the moment they register.
-- **The try/catch around create (lines 60–68):** The known Pigeon bug can throw even when the account WAS created. This one is handled inline (not with `_ignoreKnownBugIf`) because the recovery path also has to re-send the verification email that the try block never reached. If `tempAuth.currentUser == null`, it's a real failure (rethrow). (See Q&A Q9.)
+- **The try/catch around create (lines 78–91):** The known Pigeon bug can throw even when the account WAS created. This one is handled inline (not with `_ignoreKnownBugIf`) because the recovery path also has to redo the name + verification steps the try block never reached. If `tempAuth.currentUser == null`, it's a real failure (rethrow). (See Q&A Q9.)
 
-**`login()` (lines 78–90):** Wraps `signInWithEmailAndPassword` in `_ignoreKnownBugIf` with `succeeded: () => _auth.currentUser != null` — if it throws but we ARE signed in, it worked.
+**`login()` (lines 97–109):** Wraps `signInWithEmailAndPassword` in `_ignoreKnownBugIf` with `succeeded: () => _auth.currentUser != null` — if it throws but we ARE signed in, it worked.
 
-**`logout()` (lines 92–104):**
+**`logout()` (lines 111–124):**
 ```dart
 if (!kIsWeb) { try { await GoogleSignIn().signOut(); } catch (_) {} }
 await _auth.signOut();
@@ -254,30 +260,30 @@ await _auth.signOut();
 - **Why the `kIsWeb` check?** The `google_sign_in` package is only wired up for mobile. On web, calling `GoogleSignIn().signOut()` throws (no web client configured), which would *block* the Firebase sign-out below it. So on web I skip it entirely and just sign out of Firebase.
 - **Why the `try/catch`?** Even on mobile, if the user never used Google sign-in, this is best-effort — I never want it to stop the actual Firebase logout.
 
-**`sendPasswordResetEmail()` (lines 107–109):** One-liner wrapping Firebase's built-in. Firebase sends the reset email; we don't build the reset UI ourselves.
+**`sendPasswordResetEmail()` (lines 126–128):** One-liner wrapping Firebase's built-in. Firebase sends the reset email; we don't build the reset UI ourselves.
 
-**`sendEmailVerification()` (lines 112–116) — Account Management Feature #1:** Resends the verification email to the current user.
+**`sendEmailVerification()` (lines 131–135) — Account Management Feature #1:** Resends the verification email to the current user.
 
-**`isEmailVerified` getter (line 119):** `_auth.currentUser?.emailVerified ?? false`. Note: this is **cached** — hence `reloadUser()` exists.
+**`isEmailVerified` getter (line 138):** `_auth.currentUser?.emailVerified ?? false`. Note: this is **cached** — hence `reloadUser()` exists.
 
-**`reloadUser()` (lines 124–126):** `await _auth.currentUser?.reload()` — pulls fresh user data from Firebase servers so `emailVerified` reflects reality.
+**`reloadUser()` (lines 143–145):** `await _auth.currentUser?.reload()` — pulls fresh user data from Firebase servers so `emailVerified` reflects reality.
 
-**`isEmailPasswordAccount` getter (lines 133–136):**
+**`isEmailPasswordAccount` getter (lines 152–155):**
 ```dart
 _auth.currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
 ```
 - **Why does this exist?** Change-password and resend-verification only make sense for email/password accounts. A Google or GitHub user has no password to reauthenticate with. I check the user's `providerData` list for the `'password'` provider ID. This is more robust than checking `email != null` — because Google users *have* an email too, but still can't change a Firebase password. (This was a code-review fix — mention it as evidence of careful thinking.)
 
-**`changePassword()` (lines 140–174) — Account Management Feature #2:**
+**`changePassword()` (lines 159–193) — Account Management Feature #2:**
 - Requires **reauthentication** first: Firebase makes you re-enter the old password before changing it (security — proves it's really you, not someone who grabbed an unlocked phone).
 - `EmailAuthProvider.credential(email, oldPassword)` → `user.reauthenticateWithCredential(...)` → then `user.updatePassword(newPassword)`.
 - Uses `_isKnownBugError` for the Pigeon bug (can't verify a password change via `currentUser`, so it matches the error shape instead). The UI layer does NOT know about the bug — the screen just calls the service and shows `friendlyError` on failure.
 
-**`deleteAccount()` (lines 177–189) — Account Management Feature #3:**
+**`deleteAccount()` (lines 196–208) — Account Management Feature #3:**
 - `user.delete()`. Firebase requires a **recent login**; if the session is old it throws `requires-recent-login`.
 - Uses `_ignoreKnownBugIf` with `succeeded: () => _auth.currentUser == null` — if the account is actually gone, the delete worked; only rethrow if the user is still there (a real failure).
 
-**`signInWithGoogle()` (lines 191–216) — Extra Auth Method #1:**
+**`signInWithGoogle()` (lines 210–235) — Extra Auth Method #1:**
 ```dart
 if (kIsWeb) {
   await _auth.signInWithPopup(GoogleAuthProvider());   // web path
@@ -290,14 +296,14 @@ if (kIsWeb) {
 ```
 - **Why two different paths?** On **web**, the `google_sign_in` package's `signIn()` method isn't supported the same way (it needs a rendered Google button and has no access token flow), so Firebase's own `signInWithPopup` handles it in the browser. On **mobile**, we use the native `google_sign_in` flow to get tokens and hand them to Firebase. Same end result, platform-appropriate method. `kIsWeb` is a compile-time constant Flutter provides.
 
-**`signInWithGitHub()` (lines 218–229) — Extra Auth Method #2:**
+**`signInWithGitHub()` (lines 237–248) — Extra Auth Method #2:**
 ```dart
 if (kIsWeb) { await _auth.signInWithPopup(GithubAuthProvider()); }
 else { await _auth.signInWithProvider(GithubAuthProvider()); }
 ```
 - Web opens a popup; mobile/desktop opens a native OAuth web flow. GitHub is configured as an OAuth provider in the Firebase Console with a callback URL pointing at our Firebase auth handler.
 
-**`friendlyError()` (lines 231–265) — static helper:**
+**`friendlyError()` (lines 250–284) — static helper:**
 - Takes any error, and if it's a `FirebaseAuthException`, maps the raw `error.code` (like `'wrong-password'`) to a human message ("Incorrect email or password."). Every screen calls this in its catch block.
 - **Why `static`?** It doesn't need any instance state — it's a pure function. Making it static means screens can call `AuthService.friendlyError(e)` without needing the provider.
 - **Why does this matter for the rubric?** "Feedback" is a graded criterion (2.5%). Turning cryptic Firebase codes into friendly messages is exactly the clear feedback they want.
@@ -345,7 +351,7 @@ All four follow the **same pattern** — learn it once:
 - Google + GitHub `OutlinedButton.icon` buttons calling the service.
 - `_isLoading ? null : _login` on `onPressed` — passing `null` disables the button.
 
-**Register-specific:** 4 fields (name, email, password, confirm). The confirm-password validator compares against `_passwordController.text` — cross-field validation. On success it does NOT log in (see the temp-app trick) — it shows a success SnackBar and calls `onGoToLogin()`.
+**Register-specific:** 4 fields (name, email, password, confirm). The confirm-password validator compares against `_passwordController.text` — cross-field validation. The **name field is saved as the account's Firebase `displayName`**, which is what the app greets the user with after login. On success it does NOT log in (see the temp-app trick) — it shows a success SnackBar and calls `onGoToLogin()`.
 
 **Forgot-password-specific:** 1 email field → `sendPasswordResetEmail`. Firebase emails the link.
 
@@ -357,11 +363,11 @@ All four follow the **same pattern** — learn it once:
 
 These are **presentation screens** using hardcoded `SampleData` (Part 2 doesn't require a live backend — CRUD comes in Part 3). Know these facts:
 
-- **`home_screen.dart`** — `StatelessWidget`. Uses a **horizontal `ListView.builder`** (line 153) for mentors, plus `_QuickActionCard` and `_sectionHeader` helper widgets. This is your **home screen** for the widget-tree question.
+- **`home_screen.dart`** — `StatelessWidget`. Greets the user with **"Hello \<name\>"** using the `userName` passed in from `MainNavigator` (the Firebase display name). Uses a **horizontal `ListView.builder`** for mentors, plus `_QuickActionCard` and `_sectionHeader` helper widgets. Tapping a mentor card fires `onMentorTap` with that mentor → a popup says *"Opening \<name\>'s profile"*. This is your **home screen** for the widget-tree question.
 - **`search_screen.dart`** — `StatefulWidget`. Uses a **`GridView.builder`** (line 172) for the subject cards. Has a `TextField` search bar (not yet functional — honest about this). Uses Dart **records** like `('C++', 'COMT')` for the tag data.
 - **`messages_screen.dart`** — `StatefulWidget`. **`ListView.builder`** of `MessageTile`s. Tapping shows a SnackBar.
-- **`profile_screen.dart`** — `StatelessWidget`. Shows profile card, stats, 3 action buttons (Edit / Settings / Logout), sessions, a premium card, and the **NETS QR payment** placeholder (part of the proposal).
-- **`mentor_profile_screen.dart`** — `StatelessWidget`. Takes a **required `Mentor` object** and shows THAT mentor's name, specialization, rating, review count, session count and online status. Mentor taps on Home/Search pass the tapped mentor up via `ValueChanged<Mentor>` callbacks, so tapping "Jovan Tan" shows Jovan Tan (not a hardcoded profile). Specialisations/about/availability/reviews below the card are still sample content (Part 3 binds them to Firestore).
+- **`profile_screen.dart`** — `StatelessWidget`. The profile card shows the **logged-in user's display name** (passed in as `userName`, same as Home and My Mentor Profile); the course, Student ID, and stats around it are still placeholder content. Also: 3 action buttons (Edit / Settings / Logout), sessions, a premium card, and the **NETS QR payment** placeholder (part of the proposal).
+- **`mentor_profile_screen.dart`** — `StatelessWidget`. This tab is the **logged-in user's OWN mentor profile** ("My Mentor Profile"): it takes a required `userName` and shows the user's display name at the top. The stats below it (rating, reviews, sessions, specialisations, availability, reviews) are placeholder sample content until Part 3 binds them to Firestore. Tapping OTHER mentors' cards deliberately shows only a popup — browsing other mentors is Part 3 scope.
 
 **Honesty note:** The search bar and some buttons show "coming soon" SnackBars. If asked, say: "Part 2 is about UI, navigation, and auth. The CRUD-related interactions are intentionally stubbed — the spec explicitly says CRUD screens don't need to be functional yet; that's Part 3."
 
@@ -370,7 +376,7 @@ These are **presentation screens** using hardcoded `SampleData` (Part 2 doesn't 
 ### 5.6 Widgets (`MentorCard`, `MessageTile`, `SessionCard`)
 
 Reusable `StatelessWidget`s that each take a model + optional `onTap` callback.
-- **`MentorCard`** — avatar with online dot, name, specialization, star rating.
+- **`MentorCard`** — avatar with online dot, name, specialization, star rating with review count, e.g. "⭐ 4.8 (45)".
 - **`MessageTile`** — has a `_formatTimestamp` helper that shows "3:45 PM" for today, "Yesterday", weekday name, or date. Good example of real logic in a widget.
 - **`SessionCard`** — has `_sessionIcon()` (picks an icon from the title keywords) and `_formattedDate()`. Another example of logic.
 
@@ -380,8 +386,8 @@ Reusable `StatelessWidget`s that each take a model + optional `onTap` callback.
 
 ### 5.7 Models (`Mentor`, `Message`, `Session`)
 
-Plain Dart classes with `final` fields and a constructor. Immutable data holders. No logic. **Every field is actually rendered somewhere** — unused fields (imageUrl, mentorImage, isRead) were removed after a code review; Part 3 re-adds fields as Firestore needs them.
-- `mentor.dart` — id, name, specialization, rating, reviewCount, isOnline, sessionCount.
+Plain Dart classes with `final` fields and a constructor. Immutable data holders. No logic. **Every field is actually rendered somewhere** — unused fields (imageUrl, mentorImage, isRead, sessionCount) were removed after a code review; Part 3 re-adds fields as Firestore needs them.
+- `mentor.dart` — id, name, specialization, rating, reviewCount, isOnline.
 - `message.dart` — id, senderName, content, timestamp, unreadCount, isOnline.
 - `session.dart` — id, title, mentorName, date, time, status.
 
@@ -512,14 +518,15 @@ The rubric wants a "logical, well-paced" demo covering navigation, authenticatio
 
 1. **Launch** → app opens on the Login screen. *"The whole app is gated behind Firebase login — `AuthGate` decided this because no one's logged in."*
 2. **Show validation** → tap Login with empty fields → validators fire. Type a bad email → "valid email" error. *(Proves form validation — a graded criterion.)*
-3. **Register** → go to Register, fill the form, show the confirm-password mismatch error, then fix it → success SnackBar → back to login. *"Registration uses a temporary Firebase instance so it doesn't auto-log me in — it sends me back to log in manually and emails a verification link."*
-4. **Login** → enter the new credentials → app reactively swaps to Home. *"Firebase confirms, the auth stream updates, and `AuthGate` switches screens automatically."*
+3. **Register** → go to Register, fill the form **including your name**, show the confirm-password mismatch error, then fix it → success SnackBar → back to login. *"Registration uses a temporary Firebase instance so it doesn't auto-log me in — it saves my name as the Firebase display name, emails a verification link, and sends me back to log in manually."*
+4. **Login** → enter the new credentials → app reactively swaps to Home, which greets you **"Hello \<the name you registered with\>"**. *"Firebase confirms, the auth stream updates, `AuthGate` switches screens, and the greeting uses the display name saved at registration."*
 5. **Navigate all 5 tabs** → Home, Search, Messages, Profile, Mentor Profile. Point out `ListView` (Home/Messages) and `GridView` (Search) — required widgets.
-   - **Tap two different mentor cards** (one from Home, one from Search) → the Mentor Profile shows the mentor you tapped each time, and its back button returns to the tab you came from. *"The tapped `Mentor` object is passed up through a callback, stored in the navigator's state, and passed into the profile screen."*
+   - **Tap a mentor card** → a popup says *"Opening \<mentor name\>'s profile"*. *"The tapped `Mentor` object is passed up through a `ValueChanged<Mentor>` callback — the popup proves the app knows exactly which mentor was pressed. The full profile page is Part 3 scope."*
+   - **Open the Mentor Profile tab** → it's YOUR mentor profile, showing your display name. *"This tab is the logged-in user's own mentor identity; the stats are placeholders until Firestore in Part 3."*
 6. **Show state preservation** → scroll Home, switch tab, come back → still scrolled. *"All five tabs stay alive via an `IndexedStack`, so state is preserved."*
 7. **Account management** → Profile → Settings → show Change Password, Email Verification, Delete Account.
 8. **Change password** → do it live → success SnackBar.
-9. **Google or GitHub sign-in** → log out, sign in with a provider → show it works.
+9. **Google or GitHub sign-in** → log out, sign in with a provider → show it works. If the account has no display name yet, the app asks **"What should TPMentorship call you?"** — answer it and show the greeting update instantly. *(Accounts that already have a name, like most Google accounts, are greeted with it directly.)*
 10. **Logout** → Profile → Logout. *"This clears the Firebase session and `AuthGate` drops me back to login."*
 
 **Safety checklist before you present:**
@@ -538,7 +545,8 @@ The graders may probe where you're weakest. Honesty + a plan scores better than 
 - **Search bar isn't functional.** "It's UI-complete; wiring the filter logic is Part 3 scope where the data becomes live."
 - **Sample data is hardcoded.** "Correct — Part 2 is UI + auth. The `SampleData` class will be replaced by Firestore queries in Part 3, and my models are already structured to accept that." (The spec itself says CRUD screens don't need to be functional in Part 2.)
 - **The `_screen` string in `AuthFlow`.** Some might prefer an enum. "A string was simple and readable for three states; an enum would be marginally more type-safe and is an easy refactor."
-- **"John Tay" / hardcoded profile name.** The profile shows placeholder data, not the logged-in user's real info. "In Part 2 the profile is a design mock-up; Part 3 binds it to the real user and Firestore."
+- **Profile tab details are still placeholders.** The name on the profile card is the real display name now (like Home and My Mentor Profile), but the course, Student ID, dates and stats around it are still a design mock-up. "Part 3 binds those to the real user and Firestore — the display-name plumbing is already in place."
+- **Mentor cards don't open a full profile.** Tapping one shows a popup with the mentor's name instead. "Browsing other mentors' full profiles needs live data — that's Part 3. The tap already carries the exact `Mentor` object, so wiring the real page later is trivial."
 
 ---
 
@@ -565,6 +573,7 @@ The graders may probe where you're weakest. Honesty + a plan scores better than 
 | **`IndexedStack`** | A widget that stacks children and shows one by index, keeping all alive. |
 | **`kIsWeb`** | A compile-time constant that's true when running on web. |
 | **Reauthentication** | Re-confirming the user's password before sensitive actions like changing it. |
+| **`displayName`** | The name Firebase stores on an account; the app greets users with it. |
 | **Model** | A class describing the *shape* of a thing (Mentor, Message, Session) — the data fills it in. |
 
 ---
@@ -634,6 +643,9 @@ The rubric's "Excellent" for Q&A: *answers all technical questions confidently, 
 **Q16. "How would you add a real database?"**
 > Add Firestore, write a data service like my `AuthService`, and swap the `SampleData` calls for Firestore reads. My models already match, so the screens wouldn't change much. That's exactly the Part 3 plan.
 
+**Q17. "How does the app know the user's name?"**
+> Firebase stores a `displayName` on every account, on its servers. Email/password users set it on the register form — `register()` saves it with `updateDisplayName` right after creating the account. Google and GitHub users usually bring a name with them; if theirs is empty, the app shows a one-time dialog — "What should TPMentorship call you?" — and saves the answer the same way. `MainNavigator` reads it through `AuthService.displayName` and passes it to the Home greeting ("Hello \<name\>"), the Profile card, and the My Mentor Profile tab, with 'Student' as the fallback.
+
 ### Curveballs — honest, calm answers
 
 - **"Does the search bar filter?"** → "It's a styled UI scaffold in Part 2; live filtering comes in Part 3 when the data goes live. The spec says CRUD screens don't need to be functional yet."
@@ -657,6 +669,7 @@ Before you walk in, make sure you can:
 - [ ] Explain form validation with `GlobalKey<FormState>` + keyboard types.
 - [ ] Point to a `ListView` AND a `GridView` in your app.
 - [ ] Name your 3 account-management features + 2 extra auth methods (rubric only needs 2+2 for Excellent).
+- [ ] Explain where the "Hello \<name\>" greeting comes from (displayName: register form, or the Google/GitHub name prompt — Q17).
 - [ ] Explain the AuthService separation-of-concerns benefit.
 - [ ] Mention your unit tests if asked about testing.
 - [ ] Run the full demo flow smoothly with a known test account (internet on, one practice run done).

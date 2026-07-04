@@ -5,7 +5,6 @@ class Mentor {
   final double rating;
   final int reviewCount;
   final bool isOnline;
-  final int sessionCount;
 
   Mentor({
     required this.id,
@@ -14,6 +13,5 @@ class Mentor {
     required this.rating,
     required this.reviewCount,
     required this.isOnline,
-    required this.sessionCount,
   });
 }
