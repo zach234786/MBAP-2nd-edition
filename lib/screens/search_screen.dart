@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tpmentorship/data/sample_data.dart';
+import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/widgets/mentor_card.dart';
 
 class SearchScreen extends StatefulWidget {
-  final VoidCallback? onMentorTap;
+  /// Called with the mentor whose card was tapped, so the navigator can show
+  /// that mentor's profile (not a hardcoded one).
+  final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onBack;
 
   const SearchScreen({
@@ -264,7 +267,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _mentorGroup(String label, List mentorList) {
+  Widget _mentorGroup(String label, List<Mentor> mentorList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -290,7 +293,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     width: 110,
                     child: MentorCard(
                       mentor: mentor,
-                      onTap: widget.onMentorTap,
+                      onTap: () => widget.onMentorTap?.call(mentor),
                     ),
                   )),
               // "More" card

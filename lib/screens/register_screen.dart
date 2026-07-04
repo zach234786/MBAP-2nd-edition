@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
+import 'package:tpmentorship/utils/validators.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   final VoidCallback onGoToLogin;
@@ -27,13 +29,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : AppTheme.tpRed,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _register() async {
@@ -138,15 +134,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.email, color: AppTheme.tpRed),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: Validators.email,
                 ),
                 const SizedBox(height: 16),
 
@@ -170,15 +158,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           () => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                  validator: (value) =>
+                      Validators.password(value, label: 'a password'),
                 ),
                 const SizedBox(height: 16),
 

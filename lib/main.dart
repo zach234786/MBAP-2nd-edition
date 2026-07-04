@@ -3,9 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tpmentorship/firebase_options.dart';
+import 'package:tpmentorship/data/sample_data.dart';
+import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
 import 'package:tpmentorship/screens/home_screen.dart';
 import 'package:tpmentorship/screens/search_screen.dart';
 import 'package:tpmentorship/screens/messages_screen.dart';
@@ -15,6 +18,10 @@ import 'package:tpmentorship/screens/login_screen.dart';
 import 'package:tpmentorship/screens/register_screen.dart';
 import 'package:tpmentorship/screens/forgot_password_screen.dart';
 import 'package:tpmentorship/screens/change_password_screen.dart';
+
+/// Global handle to the app's Navigator so AuthGate can clear any pushed
+/// screens (e.g. Change Password) when the user signs out.
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   // Make sure Flutter is ready before we talk to Firebase.
@@ -33,6 +40,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TP Mentorship',
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       // Removes the stretchy / elastic overscroll effect on all screens.
@@ -72,6 +80,15 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // When the user signs out (or their account is deleted), swap back to the
+    // login flow AND pop any screens that were pushed on top (e.g. Change
+    // Password) - otherwise a pushed route would stay visible above AuthGate.
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.hasValue && next.value == null) {
+        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      }
+    });
+
     final authState = ref.watch(authStateProvider);
 
     return authState.when(
@@ -144,18 +161,30 @@ class MainNavigator extends ConsumerStatefulWidget {
 class _MainNavigatorState extends ConsumerState<MainNavigator> {
   int _selectedIndex = 0;
 
+  /// The mentor whose card was last tapped (shown on the Mentor Profile tab),
+  /// and which tab to return to when the user taps back on that profile.
+  Mentor? _selectedMentor;
+  int _mentorProfileReturnIndex = 0;
+
   void _onNavItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
 
+  /// Remembers which mentor was tapped and where the user came from, then
+  /// switches to the Mentor Profile tab.
+  void _openMentorProfile(Mentor mentor, {required int fromIndex}) {
+    setState(() {
+      _selectedMentor = mentor;
+      _mentorProfileReturnIndex = fromIndex;
+      _selectedIndex = 4;
+    });
+  }
+
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.tpRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // The mounted guard matters here: some callers await first (e.g. resend
+    // verification), and this State could be disposed by then.
+    if (!mounted) return;
+    showAppSnackBar(context, message);
   }
 
   void _logout() {
@@ -262,6 +291,10 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ForgotPasswordScreen(
+                                  // Here "back" returns to Change Password
+                                  // (the user is logged in), so don't label
+                                  // the link "Back to Login".
+                                  backLabel: 'Back',
                                   onGoToLogin: () => Navigator.pop(context),
                                 ),
                               ),
@@ -333,7 +366,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
           index: _selectedIndex,
           children: [
             HomeScreen(
-              onMentorTap: () => setState(() => _selectedIndex = 4),
+              onMentorTap: (mentor) => _openMentorProfile(mentor, fromIndex: 0),
               onSessionTap: () => _showSnackBar('Session details'),
               onViewAllSessions: () => _showSnackBar('Viewing all sessions'),
               onViewAllMessages: () => setState(() => _selectedIndex = 2),
@@ -341,7 +374,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
               onNavigateToMessages: () => setState(() => _selectedIndex = 2),
             ),
             SearchScreen(
-              onMentorTap: () => setState(() => _selectedIndex = 4),
+              onMentorTap: (mentor) => _openMentorProfile(mentor, fromIndex: 1),
               onBack: () => setState(() => _selectedIndex = 0),
             ),
             MessagesScreen(
@@ -355,7 +388,11 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
               onBack: () => setState(() => _selectedIndex = 0),
             ),
             MentorProfileScreen(
-              onBack: () => setState(() => _selectedIndex = 1),
+              // Falls back to the first sample mentor when the tab is opened
+              // directly from the bottom bar (no card tapped yet).
+              mentor: _selectedMentor ?? SampleData.getMentors().first,
+              onBack: () =>
+                  setState(() => _selectedIndex = _mentorProfileReturnIndex),
             ),
           ],
         ),

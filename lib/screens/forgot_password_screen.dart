@@ -3,13 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
+import 'package:tpmentorship/utils/validators.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   final VoidCallback onGoToLogin;
 
+  /// Label for the bottom link. Defaults to 'Back to Login' for the pre-login
+  /// flow; when this screen is pushed from Change Password, the caller passes
+  /// 'Back' because tapping it returns there, not to the login screen.
+  final String backLabel;
+
   const ForgotPasswordScreen({
     super.key,
     required this.onGoToLogin,
+    this.backLabel = 'Back to Login',
   });
 
   @override
@@ -24,13 +32,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : AppTheme.tpRed,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _resetPassword() async {
@@ -111,15 +113,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.email, color: AppTheme.tpRed),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: Validators.email,
                 ),
                 const SizedBox(height: 28),
 
@@ -142,9 +136,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 Center(
                   child: GestureDetector(
                     onTap: widget.onGoToLogin,
-                    child: const Text(
-                      'Back to Login',
-                      style: TextStyle(
+                    child: Text(
+                      widget.backLabel,
+                      style: const TextStyle(
                         color: AppTheme.tpRed,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

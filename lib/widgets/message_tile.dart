@@ -68,7 +68,7 @@ class MessageTile extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: message.unreadCount > 0 ? Colors.green : Colors.grey,
+                      color: message.isOnline ? Colors.green : Colors.grey,
                       border: Border.all(color: AppTheme.darkCardBg, width: 1.5),
                     ),
                   ),

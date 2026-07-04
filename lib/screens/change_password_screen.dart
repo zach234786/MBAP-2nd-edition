@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
+import 'package:tpmentorship/utils/validators.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   final VoidCallback? onForgotPassword;
@@ -29,13 +31,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : AppTheme.tpRed,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _changePassword() async {
@@ -58,14 +54,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (e is TypeError && e.toString().contains('Pigeon')) {
-        if (mounted) {
-          _showSnackBar('Password changed successfully!', success: true);
-          Navigator.pop(context);
-        }
-      } else {
-        if (mounted) _showSnackBar(AuthService.friendlyError(e));
-      }
+      // AuthService already filters out the known firebase_auth false-error
+      // bug, so anything that reaches here is a real failure.
+      if (mounted) _showSnackBar(AuthService.friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -135,12 +126,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           () => _obscureOldPassword = !_obscureOldPassword),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your current password';
-                    }
-                    return null;
-                  },
+                  validator: (value) =>
+                      Validators.password(value, label: 'your current password'),
                 ),
                 const SizedBox(height: 16),
 
@@ -167,12 +154,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a new password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
+                    final error =
+                        Validators.password(value, label: 'a new password');
+                    if (error != null) return error;
                     if (value == _oldPasswordController.text) {
                       return 'New password must be different from current';
                     }
@@ -204,12 +188,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your new password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
+                    final error = Validators.password(value,
+                        label: 'your new password again');
+                    if (error != null) return error;
                     if (value != _newPasswordController.text) {
                       return 'Passwords do not match';
                     }

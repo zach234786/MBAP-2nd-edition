@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
+import 'package:tpmentorship/utils/validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onGoToRegister;
@@ -28,13 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : AppTheme.tpRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _login() async {
@@ -265,15 +261,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           borderSide: const BorderSide(color: AppTheme.tpRed, width: 2),
                                         ),
                                       ),
-                                      validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
-                                          return 'Please enter your Student ID';
-                                        }
-                                        if (!value.contains('@')) {
-                                          return 'Please enter a valid email';
-                                        }
-                                        return null;
-                                      },
+                                      validator: (value) => Validators
+                                          .email(value, field: 'Student ID'),
                                     ),
                                     const SizedBox(height: 12),
 
@@ -321,15 +310,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           borderSide: const BorderSide(color: AppTheme.tpRed, width: 2),
                                         ),
                                       ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your password';
-                                        }
-                                        if (value.length < 6) {
-                                          return 'Password must be at least 6 characters';
-                                        }
-                                        return null;
-                                      },
+                                      validator: Validators.password,
                                     ),
                                     const SizedBox(height: 4),
 

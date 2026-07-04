@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:tpmentorship/data/sample_data.dart';
+import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/widgets/mentor_card.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  final VoidCallback? onMentorTap;
+  /// Called with the mentor whose card was tapped, so the navigator can show
+  /// that mentor's profile (not a hardcoded one).
+  final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onSessionTap;
   final VoidCallback? onViewAllSessions;
   final VoidCallback? onViewAllMessages;
@@ -159,7 +162,10 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 12),
                   child: SizedBox(
                     width: 100,
-                    child: MentorCard(mentor: mentors[index], onTap: onMentorTap),
+                    child: MentorCard(
+                      mentor: mentors[index],
+                      onTap: () => onMentorTap?.call(mentors[index]),
+                    ),
                   ),
                 );
               },

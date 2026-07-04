@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tpmentorship/data/sample_data.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
+import 'package:tpmentorship/utils/snackbar_helper.dart';
 import 'package:tpmentorship/widgets/message_tile.dart';
 
 class MessagesScreen extends StatefulWidget {
@@ -166,15 +167,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
             itemBuilder: (context, index) {
               return MessageTile(
                 message: messages[index],
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Opening chat with ${messages[index].senderName}'),
-                      backgroundColor: AppTheme.tpRed,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
+                onTap: () => showAppSnackBar(
+                    context, 'Opening chat with ${messages[index].senderName}'),
               );
             },
           ),

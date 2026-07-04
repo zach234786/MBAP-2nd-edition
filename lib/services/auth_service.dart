@@ -15,6 +15,29 @@ class AuthService {
   /// The currently signed-in user (or null if nobody is signed in).
   User? get currentUser => _auth.currentUser;
 
+  /// There is a known firebase_auth bug where the native bridge ("Pigeon")
+  /// throws a type-cast error even when the operation actually SUCCEEDED.
+  /// This helper runs [action] and swallows that false error - but ONLY when
+  /// [succeeded] confirms the operation really worked (e.g. we are now signed
+  /// in). Real failures are rethrown. Centralised here so every auth method
+  /// handles the bug the same way.
+  Future<void> _ignoreKnownBugIf({
+    required Future<void> Function() action,
+    required bool Function() succeeded,
+  }) async {
+    try {
+      await action();
+    } catch (e) {
+      if (!succeeded()) rethrow;
+    }
+  }
+
+  /// Recognises the same known bug by its error shape, for operations (like
+  /// changing a password) whose success cannot be confirmed by checking
+  /// [currentUser] afterwards.
+  static bool _isKnownBugError(Object e) =>
+      e is TypeError && e.toString().contains('Pigeon');
+
   /// REGISTER a new account with email + password.
   ///
   /// We create the account on a SEPARATE, temporary Firebase app so that
@@ -38,8 +61,10 @@ class AuthService {
         );
         await credential.user?.sendEmailVerification();
       } catch (e) {
-        // A known firebase_auth bug can throw a type-cast error even when
-        // the account WAS created. If no account exists, it's a real error.
+        // The known bug (see _ignoreKnownBugIf) can throw a type-cast error
+        // even when the account WAS created. This is handled inline instead
+        // of with the shared helper because the recovery path also has to
+        // re-send the verification email that the try block never reached.
         if (tempAuth.currentUser == null) rethrow;
         await tempAuth.currentUser?.sendEmailVerification();
       }
@@ -48,21 +73,19 @@ class AuthService {
     }
   }
 
-  /// LOGIN with email + password.
+  /// LOGIN with email + password. Login can succeed but still throw the
+  /// known bug's cast error - if we ARE signed in afterwards, it worked.
   Future<void> login({
     required String email,
     required String password,
-  }) async {
-    try {
-      await _auth.signInWithEmailAndPassword(
+  }) {
+    return _ignoreKnownBugIf(
+      action: () => _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
-      );
-    } catch (e) {
-      // Same known bug: login can succeed but still throw a cast error.
-      // If we ARE signed in afterwards, treat it as success.
-      if (_auth.currentUser == null) rethrow;
-    }
+      ),
+      succeeded: () => _auth.currentUser != null,
+    );
   }
 
   /// LOGOUT the current user (also signs out of Google on mobile if used).
@@ -128,23 +151,19 @@ class AuthService {
       email: user.email!,
       password: oldPassword,
     );
+    // Reauth/update success can't be confirmed via currentUser, so here we
+    // recognise the known bug by its error shape instead.
     try {
       await user.reauthenticateWithCredential(credential);
     } catch (e) {
-      // Known firebase_auth bug throws type-cast error even when successful
-      if (!(e is TypeError && e.toString().contains('Pigeon'))) {
-        rethrow;
-      }
+      if (!_isKnownBugError(e)) rethrow;
     }
 
     // Update to new password (separate try/catch in case this also has the bug)
     try {
       await user.updatePassword(newPassword);
     } catch (e) {
-      // Known firebase_auth bug throws type-cast error even when successful
-      if (!(e is TypeError && e.toString().contains('Pigeon'))) {
-        rethrow;
-      }
+      if (!_isKnownBugError(e)) rethrow;
     }
   }
 
@@ -160,14 +179,12 @@ class AuthService {
     if (user == null) {
       throw FirebaseAuthException(code: 'requires-recent-login');
     }
-    try {
-      await user.delete();
-    } catch (e) {
-      // The known type-cast bug can throw even when the delete succeeded. If
-      // the account is actually gone, currentUser is now null - only surface
-      // real failures (e.g. requires-recent-login, which leaves the user set).
-      if (_auth.currentUser != null) rethrow;
-    }
+    // If the account is actually gone, currentUser is now null - only surface
+    // real failures (e.g. requires-recent-login, which leaves the user set).
+    await _ignoreKnownBugIf(
+      action: user.delete,
+      succeeded: () => _auth.currentUser == null,
+    );
   }
 
   /// AUTH METHOD not taught in class (1): Google Sign-in.
@@ -176,12 +193,10 @@ class AuthService {
     // (it has no access token and needs a rendered button). Firebase's own
     // popup flow handles Google sign-in directly in the browser instead.
     if (kIsWeb) {
-      final googleProvider = GoogleAuthProvider();
-      try {
-        await _auth.signInWithPopup(googleProvider);
-      } catch (e) {
-        if (_auth.currentUser == null) rethrow;
-      }
+      await _ignoreKnownBugIf(
+        action: () => _auth.signInWithPopup(GoogleAuthProvider()),
+        succeeded: () => _auth.currentUser != null,
+      );
       return;
     }
 
@@ -193,28 +208,23 @@ class AuthService {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-    try {
-      await _auth.signInWithCredential(credential);
-    } catch (e) {
-      if (_auth.currentUser == null) rethrow;
-    }
+    await _ignoreKnownBugIf(
+      action: () => _auth.signInWithCredential(credential),
+      succeeded: () => _auth.currentUser != null,
+    );
   }
 
   /// AUTH METHOD not taught in class (2): GitHub Sign-in.
-  Future<void> signInWithGitHub() async {
+  Future<void> signInWithGitHub() {
     final githubProvider = GithubAuthProvider();
-    try {
-      if (kIsWeb) {
-        // On web, Firebase opens a GitHub OAuth popup.
-        await _auth.signInWithPopup(githubProvider);
-      } else {
-        // On mobile/desktop, Firebase opens a native OAuth web flow.
-        await _auth.signInWithProvider(githubProvider);
-      }
-    } catch (e) {
-      // The known type-cast bug can throw even when sign-in actually worked.
-      if (_auth.currentUser == null) rethrow;
-    }
+    return _ignoreKnownBugIf(
+      // Web opens a GitHub OAuth popup; mobile/desktop opens a native
+      // OAuth web flow.
+      action: () => kIsWeb
+          ? _auth.signInWithPopup(githubProvider)
+          : _auth.signInWithProvider(githubProvider),
+      succeeded: () => _auth.currentUser != null,
+    );
   }
 
   /// Turns Firebase error codes into friendly messages for the user.
