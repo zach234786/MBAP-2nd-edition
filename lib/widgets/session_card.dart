@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/models/session.dart';
+// the session data (title, mentor, date, etc)
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 
 class SessionCard extends StatelessWidget {
+// a card showing one booked session, reused in the home and profile screens
   final Session session;
+  // the session to show on this card
   final VoidCallback? onTap;
+  // what to run when the card is tapped
 
   const SessionCard({
     super.key,
@@ -13,15 +19,18 @@ class SessionCard extends StatelessWidget {
   });
 
   IconData _sessionIcon() {
+  // picks an icon based on words in the session title
     final t = session.title.toLowerCase();
     if (t.contains('web') || t.contains('development')) return Icons.code;
     if (t.contains('data') || t.contains('analytics')) return Icons.bar_chart;
     if (t.contains('security') || t.contains('cyber')) return Icons.security;
     if (t.contains('ai') || t.contains('machine')) return Icons.psychology;
     return Icons.school;
+    // fallback icon if nothing matches
   }
 
   String _formattedDate() {
+  // turns the date into a readable string like "5 Jul 2026"
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -33,6 +42,7 @@ class SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      // makes the whole card tappable
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.darkCardBg,
@@ -42,6 +52,7 @@ class SessionCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
+            // topic icon on the left
             Container(
               width: 48,
               height: 48,
@@ -53,6 +64,7 @@ class SessionCard extends StatelessWidget {
               child: Icon(_sessionIcon(), color: AppTheme.tpRed, size: 24),
             ),
             const SizedBox(width: 12),
+            // title, mentor name, date and time
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,6 +78,7 @@ class SessionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
+                  // "with <mentor name>" line
                   RichText(
                     text: TextSpan(
                       text: 'with ',
@@ -82,6 +95,7 @@ class SessionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
+                  // date and time row
                   Row(
                     children: [
                       const Icon(Icons.calendar_today, size: 11, color: AppTheme.textSecondary),
@@ -102,6 +116,7 @@ class SessionCard extends StatelessWidget {
                 ],
               ),
             ),
+            // status pill on the right (eg pending, confirmed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(

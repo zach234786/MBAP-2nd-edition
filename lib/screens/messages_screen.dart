@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/data/sample_data.dart';
+// fake sample data used to fill the screen
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/utils/snackbar_helper.dart';
+// helper to show popup messages
 import 'package:tpmentorship/widgets/message_tile.dart';
+// the message row widget
 
 class MessagesScreen extends StatefulWidget {
+// screen showing the list of chats
   final VoidCallback? onBack;
+  // run when the back arrow is tapped
 
   const MessagesScreen({super.key, this.onBack});
 
@@ -15,13 +22,17 @@ class MessagesScreen extends StatefulWidget {
 
 class _MessagesScreenState extends State<MessagesScreen> {
   final TextEditingController _searchController = TextEditingController();
+  // grabs whatever the user types into the search box
   final messages = SampleData.getMessages();
+  // the list of chats to show
   final mentors = SampleData.getMentors();
+  // the mentors shown in the row of circles at the top
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // back arrow, title and subtitle
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -55,6 +66,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
         const SizedBox(height: 12),
 
+        // search box 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -84,14 +96,17 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
         const SizedBox(height: 12),
 
+        // row of mentor circles at the top 
         SizedBox(
           height: 90,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: mentors.map((mentor) {
+              // build one avatar per mentor
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // profile picture 
                   Stack(
                     children: [
                       Container(
@@ -114,6 +129,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: mentor.isOnline ? Colors.green : Colors.grey,
+                            // green if online, grey if offline
                             border: Border.all(color: AppTheme.darkBg, width: 1.5),
                           ),
                         ),
@@ -121,6 +137,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     ],
                   ),
                   const SizedBox(height: 5),
+                  // first name under the avatar
                   SizedBox(
                     width: 58,
                     child: Text(
@@ -141,6 +158,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ),
         ),
 
+        // msgs section label
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Align(
@@ -156,15 +174,18 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ),
         ),
 
+        // the scrollable list of chats
         Expanded(
           child: ListView.builder(
             itemCount: messages.length,
             padding: const EdgeInsets.only(bottom: 16),
             itemBuilder: (context, index) {
+              // build one message row per chat
               return MessageTile(
                 message: messages[index],
                 onTap: () => showAppSnackBar(
                     context, 'Opening chat with ${messages[index].senderName}'),
+                    // just shows a popup since chat screens arent built yet
               );
             },
           ),
@@ -175,7 +196,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   void dispose() {
+  // runs when the screen is closed for good
     _searchController.dispose();
+    // free the controllers memory to avoid leaks
     super.dispose();
   }
 }

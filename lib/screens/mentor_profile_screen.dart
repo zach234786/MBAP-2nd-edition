@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/data/sample_data.dart';
+// fake sample data (reviews) used to fill the screen
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 
 class MentorProfileScreen extends StatelessWidget {
+// the users own mentor profile page 
   final String userName;
+  // the mentors name, shown at the top
   final VoidCallback? onBack;
+  // run when the back arrow is tapped
 
   const MentorProfileScreen({super.key, required this.userName, this.onBack});
 
   @override
   Widget build(BuildContext context) {
     final reviews = SampleData.getReviews();
+    // the student reviews listed at the bottom
 
     return SingleChildScrollView(
+    // whole screen scrolls
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // back arrow and title
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -39,6 +48,7 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
+          // mentor data
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -50,6 +60,7 @@ class MentorProfileScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // profile picture 
                 Stack(
                   children: [
                     Container(
@@ -79,6 +90,7 @@ class MentorProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 14),
+                // more mentor data
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,6 +129,7 @@ class MentorProfileScreen extends StatelessWidget {
                                 color: AppTheme.textSecondary, fontSize: 11),
                           ),
                           const SizedBox(width: 8),
+                          // show how many sessions taught
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
@@ -171,6 +184,7 @@ class MentorProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // one box per specialisation
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -198,6 +212,7 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
+          // about me section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -225,6 +240,7 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
+          // availability section 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -248,6 +264,7 @@ class MentorProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Column(
                     children: [
+                      // one row per available day, divided by lines
                       _availabilityRow('Monday', '2PM - 6PM'),
                       const Divider(color: AppTheme.darkBorder, height: 1),
                       _availabilityRow('Tuesday', '9AM - 12PM'),
@@ -261,6 +278,7 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
+          // student reviews section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -288,6 +306,7 @@ class MentorProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // build one review card per review
                 ...reviews.map((review) => Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
@@ -299,6 +318,7 @@ class MentorProfileScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // reviewer data
                           Row(
                             children: [
                               Container(
@@ -342,12 +362,14 @@ class MentorProfileScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 8),
+                          // star rating 
                           Row(
                             children: [
                               ...List.generate(
                                 5,
                                 (_) => const Icon(Icons.star,
                                     color: Colors.amber, size: 13),
+                                // always shows 5 stars
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -361,6 +383,7 @@ class MentorProfileScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 8),
+                          // the review text
                           Text(
                             review['review']!,
                             style: const TextStyle(
@@ -382,6 +405,7 @@ class MentorProfileScreen extends StatelessWidget {
   }
 
   Widget _availabilityRow(String day, String time) {
+  // one line in the availability box showing a day and its time slot
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -397,6 +421,7 @@ class MentorProfileScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          // pushes the time to the far right
           Text(
             time,
             style: const TextStyle(

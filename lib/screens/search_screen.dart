@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/data/sample_data.dart';
+// fake sample data used to fill the screen
 import 'package:tpmentorship/models/mentor.dart';
+// the mentor data type
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/widgets/mentor_card.dart';
+// the small mentor card widget
 
 class SearchScreen extends StatefulWidget {
+// screen for browsing and finding mentors
   final ValueChanged<Mentor>? onMentorTap;
+  // run when a mentor is tapped
   final VoidCallback? onBack;
+  // run when the back arrow is tapped
 
   const SearchScreen({
     super.key,
@@ -20,8 +28,11 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  // grabs whatever the user types into the search box
   final mentors = SampleData.getMentors();
+  // the list of mentors to show
 
+  // preset tags shown under "popular searches"
   static const _popularSearches = [
     ('</>', 'DAVA'),
     ('+/-', 'LOMA'),
@@ -30,6 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
     ('', 'GSOST'),
   ];
 
+  // preset subjects shown in the "browse by subject" grid
   static const _subjects = [
     ('Development', 'Explore development\nmentors & sessions', Icons.code),
     ('Data', 'Explore data analytics\nmentors & sessions', Icons.bar_chart),
@@ -41,11 +53,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // split the mentors into two groups for the ratings section
     final groupA = mentors.take(2).toList();
     final groupB = mentors.skip(2).take(2).toList();
 
     return Column(
       children: [
+        // back arrow, title and subtitle
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -79,6 +93,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         const SizedBox(height: 12),
 
+        // search box 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -108,11 +123,13 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         const SizedBox(height: 12),
 
+        // rest of the page scrolls
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // popular searches section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -140,6 +157,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                               child: Text(
                                 tag.$1.isEmpty ? tag.$2 : '${tag.$1}  ${tag.$2}',
+                                // show just the label if theres no symbol
                                 style: const TextStyle(
                                   color: AppTheme.tpRed,
                                   fontSize: 12,
@@ -152,6 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // browse by subject section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -169,14 +188,17 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
+                    // let the outer scroll view handle scrolling
                     itemCount: _subjects.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
+                      // two cards per row
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
                       childAspectRatio: 2.0,
                     ),
                     itemBuilder: (context, index) {
+                      // build one card per subject
                       final s = _subjects[index];
                       return _buildSubjectCard(s.$1, s.$2, s.$3);
                     },
@@ -184,6 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // browse by mentor ratings section
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -209,6 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSubjectCard(String title, String description, IconData icon) {
+  // builds one card in the browse by subject grid
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.darkCardBg,
@@ -218,6 +242,7 @@ class _SearchScreenState extends State<SearchScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         children: [
+          // subject icon
           Container(
             width: 36,
             height: 36,
@@ -229,6 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Icon(icon, color: AppTheme.tpRed, size: 18),
           ),
           const SizedBox(width: 8),
+          // title and short desc
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,6 +273,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 const SizedBox(height: 2),
                 Text(
                   description.split('\n').first,
+                  // only show the first line of the desc
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9),
@@ -261,9 +288,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _mentorGroup(String label, List<Mentor> mentorList) {
+  // builds a row of mentor cards 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // group label 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -282,6 +311,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              // one card per mentor in this group
               ...mentorList.map((mentor) => SizedBox(
                     width: 110,
                     child: MentorCard(
@@ -319,7 +349,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+  // runs when the screen is closed for good
     _searchController.dispose();
+    // free the controllers memory to avoid leaks
     super.dispose();
   }
 }

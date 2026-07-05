@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/data/sample_data.dart';
+// fake sample data used to fill the screen
 import 'package:tpmentorship/models/mentor.dart';
+// the mentor data type
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/widgets/mentor_card.dart';
+// the small mentor card widget
 import 'package:tpmentorship/widgets/session_card.dart';
+// the session card widget
 
 class HomeScreen extends StatelessWidget {
+// the main landing screen after logging in
   final String userName;
+  // the logged in username shown in greeting
 
+  // used to handle taps and navigation
   final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onSessionTap;
   final VoidCallback? onViewAllSessions;
@@ -28,14 +37,17 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // grab the sample data to display
     final mentors = SampleData.getMentors();
     final sessions = SampleData.getUpcomingSessions();
     final messages = SampleData.getMessages();
 
     return SingleChildScrollView(
+    // whole screen scrolls
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // top bar with the logo, app name and a notification bell
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -43,6 +55,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    // the "TP" logo box
                     Container(
                       width: 38,
                       height: 38,
@@ -83,6 +96,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
+                    // TP Mentorship title
                     RichText(
                       text: const TextSpan(
                         children: [
@@ -113,6 +127,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
+          // greeting with the user name in red
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: RichText(
@@ -146,6 +161,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
+          // recommended mentors scrolls sideways
           _sectionHeader('Recommended Mentors', 'View all >', onNavigateToSearch),
           const SizedBox(height: 12),
           SizedBox(
@@ -155,6 +171,7 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: mentors.length,
               itemBuilder: (context, index) {
+                // build one mentor card per mentor
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: SizedBox(
@@ -196,6 +213,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
+          // upcoming sessions list
           _sectionHeader('Upcoming Sessions', 'View all >', onViewAllSessions),
           const SizedBox(height: 12),
           Padding(
@@ -207,14 +225,17 @@ class HomeScreen extends StatelessWidget {
                         child: SessionCard(session: s, onTap: onSessionTap),
                       ))
                   .toList(),
+                  // one session card per session
             ),
           ),
 
+          // messages preview
           _sectionHeader('Messages', 'View all >', onNavigateToMessages),
           const SizedBox(height: 8),
           ...messages.take(3).map(
                 (message) => GestureDetector(
                   onTap: onNavigateToMessages,
+                  // tapping any message opens the messages screen
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -225,6 +246,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
+                        // profile picture 
                         Stack(
                           children: [
                             Container(
@@ -257,6 +279,7 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(width: 12),
+                        // sender name and message preview
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,6 +303,7 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // unread count bubble only if there are unread messages
                         if (message.unreadCount > 0)
                           Container(
                             width: 20,
@@ -368,6 +392,7 @@ class _QuickActionCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // the icon box
             Container(
               width: 38,
               height: 38,
@@ -379,6 +404,7 @@ class _QuickActionCard extends StatelessWidget {
               child: Icon(icon, color: AppTheme.tpRed, size: 18),
             ),
             const SizedBox(width: 10),
+            // title and subtitle
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

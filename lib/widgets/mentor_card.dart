@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/models/mentor.dart';
+// the mentor data (name, rating, etc)
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 
 class MentorCard extends StatelessWidget {
+// a small tappable card showing one mentor, reused in the home and search screens
   final Mentor mentor;
+  // the mentor to show on this card
   final VoidCallback? onTap;
+  // what to run when the card is tapped
 
   const MentorCard({
     super.key,
@@ -16,6 +22,7 @@ class MentorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      // makes the whole card tappable
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(color: AppTheme.tpRed, width: 2),
@@ -27,6 +34,7 @@ class MentorCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // profile picture with an online dot in the corner
             Stack(
               children: [
                 Container(
@@ -48,6 +56,7 @@ class MentorCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: mentor.isOnline ? Colors.green : Colors.grey,
+                      // green if online, grey if offline
                       border: Border.all(color: AppTheme.darkCardBg, width: 2),
                     ),
                   ),
@@ -55,6 +64,7 @@ class MentorCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
+            // mentor name
             Text(
               mentor.name,
               textAlign: TextAlign.center,
@@ -67,6 +77,7 @@ class MentorCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
+            // what the mentor specialises in
             Text(
               mentor.specialization,
               textAlign: TextAlign.center,
@@ -78,6 +89,7 @@ class MentorCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
+            // star rating and number of reviews
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,

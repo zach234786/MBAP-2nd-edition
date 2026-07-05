@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+// built in ui widgets
 import 'package:tpmentorship/data/sample_data.dart';
+// fake sample data used to fill the screen
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/widgets/session_card.dart';
+// the session card widget
 
 class ProfileScreen extends StatelessWidget {
+// users own profile page
   final String userName;
+  // the users name, shown at the top
 
+  // functions passed in from the parent to handle button taps
   final VoidCallback? onEditProfile;
   final VoidCallback? onSettings;
   final VoidCallback? onLogout;
@@ -25,11 +32,14 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sessions = SampleData.getUpcomingSessions();
+    // the sessions to list further down
 
     return SingleChildScrollView(
+    // whole screen scrolls
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // back arrow and title
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -53,6 +63,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
+          // main profile card 
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -66,6 +77,7 @@ class ProfileScreen extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // profile picture 
                     Stack(
                       children: [
                         Container(
@@ -95,6 +107,7 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(width: 14),
+                    // name, course and a short bio and read more
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,6 +155,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
+                // two info boxes, account created date and student id
                 Row(
                   children: [
                     Expanded(
@@ -209,6 +223,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
+                // edit profile settings and logout buttons
                 Row(
                   children: [
                     Expanded(
@@ -241,6 +256,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
+          // sessions section with a filter link
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -287,10 +303,12 @@ class ProfileScreen extends StatelessWidget {
                         child: SessionCard(session: s),
                       ))
                   .toList(),
+                  // one session card per session
             ),
           ),
           const SizedBox(height: 24),
 
+          // premium subscription advert card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -302,6 +320,7 @@ class ProfileScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // left side, name and the perks you get
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,6 +347,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
+                // right side got price and a see more link
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -362,6 +382,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
+          // payment method card (NETS QR)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(14),
@@ -372,6 +393,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // NETS logo box
                 Container(
                   width: 48,
                   height: 48,
@@ -392,6 +414,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
+                // payment details text
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,6 +450,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _premiumBullet(String text) {
+  // a single bullet point line in the premium card
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -443,6 +467,7 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileActionButton extends StatelessWidget {
+// small icon and label button used in the profile card 
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
@@ -466,6 +491,7 @@ class _ProfileActionButton extends StatelessWidget {
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
+          // shrink the text/icon so it never overflows the button
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
