@@ -3,9 +3,6 @@ import 'package:tpmentorship/data/sample_data.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
 
 class MentorProfileScreen extends StatelessWidget {
-  /// This tab shows the LOGGED-IN user's own mentor profile. [userName] is
-  /// their chosen display name; the stats below it are placeholder content
-  /// until Part 3 binds them to Firestore.
   final String userName;
   final VoidCallback? onBack;
 
@@ -19,7 +16,6 @@ class MentorProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -43,7 +39,6 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Mentor Card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -76,7 +71,7 @@ class MentorProfileScreen extends StatelessWidget {
                         height: 18,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.green, // it's you - you're online
+                          color: Colors.green,
                           border: Border.all(color: AppTheme.darkCardBg, width: 2),
                         ),
                       ),
@@ -149,7 +144,6 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Specialisations
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -204,7 +198,6 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // About Me
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -232,7 +225,6 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Availability
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -269,7 +261,6 @@ class MentorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Student Reviews
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(

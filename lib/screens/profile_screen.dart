@@ -4,7 +4,6 @@ import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 
 class ProfileScreen extends StatelessWidget {
-  /// The logged-in user's display name, shown on the profile card.
   final String userName;
 
   final VoidCallback? onEditProfile;
@@ -31,7 +30,6 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
@@ -55,7 +53,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Profile Card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -66,7 +63,6 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Avatar + info
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -146,7 +142,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // Stats row
                 Row(
                   children: [
                     Expanded(
@@ -214,7 +209,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // Action buttons
                 Row(
                   children: [
                     Expanded(
@@ -247,7 +241,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Sessions Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -298,7 +291,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Premium Card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -370,7 +362,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // NETS Payment
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(14),

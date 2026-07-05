@@ -1,6 +1,3 @@
-// File generated from your Firebase project (google-services.json).
-// Used by Firebase.initializeApp() so the app knows which Firebase
-// project to talk to. These values are NOT secret.
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;

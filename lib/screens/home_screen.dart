@@ -6,11 +6,8 @@ import 'package:tpmentorship/widgets/mentor_card.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  /// The logged-in user's display name, shown in the greeting.
   final String userName;
 
-  /// Called with the mentor whose card was tapped, so the navigator can react
-  /// to the specific mentor (currently a popup with their name).
   final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onSessionTap;
   final VoidCallback? onViewAllSessions;
@@ -39,7 +36,6 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -47,7 +43,6 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // TP Logo icon
                     Container(
                       width: 38,
                       height: 38,
@@ -118,7 +113,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Greeting - personalised with the logged-in user's display name.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: RichText(
@@ -152,7 +146,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Recommended Mentors
           _sectionHeader('Recommended Mentors', 'View all >', onNavigateToSearch),
           const SizedBox(height: 12),
           SizedBox(
@@ -177,7 +170,6 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Quick Actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -204,7 +196,6 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Upcoming Sessions
           _sectionHeader('Upcoming Sessions', 'View all >', onViewAllSessions),
           const SizedBox(height: 12),
           Padding(
@@ -219,7 +210,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Messages
           _sectionHeader('Messages', 'View all >', onNavigateToMessages),
           const SizedBox(height: 8),
           ...messages.take(3).map(

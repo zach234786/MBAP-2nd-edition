@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
+// flutter's built in ui widgets (buttons, text fields, etc)
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// riverpod for state management, lets this screen read the auth providers
 import 'package:tpmentorship/providers/auth_provider.dart';
+// the providers that hold the auth service and login state
 import 'package:tpmentorship/services/auth_service.dart';
+// the auth service that talks to firebase (login, register, etc)
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/utils/snackbar_helper.dart';
+// helper to show popup messages at the bottom of the screen
 import 'package:tpmentorship/utils/validators.dart';
+// helper to check if email/password fields are valid
 
 class LoginScreen extends ConsumerStatefulWidget {
+// login screen, ConsumerStatefulWidget means it can change itself and read riverpod providers
   final VoidCallback onGoToRegister;
+  // function passed in from the parent to switch to the register screen
   final VoidCallback onGoToForgotPassword;
+  // function passed in from the parent to switch to the forgot password screen
 
   const LoginScreen({
     super.key,
     required this.onGoToRegister,
     required this.onGoToForgotPassword,
+    // whoever creates this screen must provide these two functions
   });
 
   @override
@@ -22,33 +33,45 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  // remote control for the form, lets us validate all fields at once
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // grab whatever the user types into the email and password boxes
   bool _obscurePassword = true;
+  // password hidden by default
   bool _rememberMe = false;
+  // remember me checkbox starts unchecked
   bool _isLoading = false;
+  // true while logging in, used to show spinner and disable buttons
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
+    // if the screen was closed while loading dont display pop up
     showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+    // check all fields are valid first, stop if not
     setState(() => _isLoading = true);
+    // turn on loading spinner
     try {
       await ref.read(authServiceProvider).login(
+      // grab the auth service and try to log in with the typed email and password
             email: _emailController.text,
             password: _passwordController.text,
           );
     } catch (e) {
       _showSnackBar(AuthService.friendlyError(e));
+      // if login fails, show error message
     } finally {
       if (mounted) setState(() => _isLoading = false);
+      // always turn the loading spinner back off when done
     }
   }
 
   Future<void> _signInWithGoogle() async {
+  // same pattern as login but uses the google sign in popup 
     setState(() => _isLoading = true);
     try {
       await ref.read(authServiceProvider).signInWithGoogle();
@@ -60,6 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGitHub() async {
+  // same pattern but uses the github sign in popup
     setState(() => _isLoading = true);
     try {
       await ref.read(authServiceProvider).signInWithGitHub();
@@ -75,9 +99,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBg,
       body: Stack(
+      // Stack layers widgets on top of each other
         children: [
-          // Bottom gradient (campus background effect)
           Positioned(
+          // red gradient glow at the bottom of the screen, sits behind the form
             bottom: 0,
             left: 0,
             right: 0,
@@ -97,21 +122,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
           SafeArea(
+          // keep content out from under the notch/status bar
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
+                // makes the form scrollable so it doesn't overflow when the keyboard pops up
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: IntrinsicHeight(
+                    // make the form at least as tall as the screen but taller if needed
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Form(
                           key: _formKey,
+                          // linked to _formKey so we can validate every field at once
                           child: Column(
                             children: [
                               const SizedBox(height: 40),
 
-                              // TP Logo
                               Container(
                                 width: 80,
                                 height: 80,
@@ -165,7 +193,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Title
                               RichText(
                                 text: const TextSpan(
                                   children: [
@@ -195,7 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 24),
 
-                              // Register link
+                              //"don't have an account? register here" link 
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -205,6 +232,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   GestureDetector(
                                     onTap: widget.onGoToRegister,
+                                    // tapping this calls the function to switch to the register screen
                                     child: const Text(
                                       'Register Here.',
                                       style: TextStyle(
@@ -218,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Form card
+                              // card holding the email and password fields 
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
@@ -228,7 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    // Student ID field
+                                    // email field, displayed as a Student ID
                                     TextFormField(
                                       controller: _emailController,
                                       style: const TextStyle(color: AppTheme.textPrimary),
@@ -263,14 +291,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       ),
                                       validator: (value) => Validators
                                           .email(value, field: 'Student ID'),
+                                      // checks it's a valid email
                                     ),
                                     const SizedBox(height: 12),
 
-                                    // Password field
+                                    // password field, with the eye icon to show/hide
                                     TextFormField(
                                       controller: _passwordController,
                                       style: const TextStyle(color: AppTheme.textPrimary),
                                       obscureText: _obscurePassword,
+                                      // hides the text when true
                                       decoration: InputDecoration(
                                         hintText: 'Password',
                                         hintStyle: const TextStyle(color: AppTheme.textSecondary),
@@ -294,6 +324,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           ),
                                           onPressed: () => setState(
                                               () => _obscurePassword = !_obscurePassword),
+                                          // eye button, flips show/hide password 
                                         ),
                                         fillColor: AppTheme.darkBg,
                                         filled: true,
@@ -311,10 +342,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                       ),
                                       validator: Validators.password,
+                                      // checks the password is valid
                                     ),
                                     const SizedBox(height: 4),
 
-                                    // Remember me + Forgot password
+                                    // --- remember me checkbox + forgot password link ---
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
@@ -327,6 +359,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 value: _rememberMe,
                                                 onChanged: (value) => setState(
                                                     () => _rememberMe = value ?? false),
+                                                // update the remember me state when tapped
                                                 fillColor: WidgetStateProperty.resolveWith(
                                                   (states) => states.contains(WidgetState.selected)
                                                       ? AppTheme.tpRed
@@ -347,6 +380,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                         GestureDetector(
                                           onTap: widget.onGoToForgotPassword,
+                                          // tapping switches to the forgot password screen
                                           child: const Text(
                                             'Forgot Password?',
                                             style: TextStyle(
@@ -363,12 +397,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 20),
 
-                              // Login button
+                              // login button 
                               SizedBox(
                                 width: double.infinity,
                                 height: 52,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _login,
+                                  // disabled while loading so you can't tap twice
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.tpRed,
                                     shape: RoundedRectangleBorder(
@@ -378,6 +413,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     shadowColor: AppTheme.tpRed.withValues(alpha: 0.5),
                                   ),
                                   child: _isLoading
+                                      // show a spinner while loading
                                       ? const SizedBox(
                                           height: 20,
                                           width: 20,
@@ -398,7 +434,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Divider
+                              // divider between login and social sign in 
                               Row(
                                 children: const [
                                   Expanded(child: Divider(color: AppTheme.darkBorder)),
@@ -412,7 +448,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Google sign-in
+                              // google sign in button 
                               SizedBox(
                                 width: double.infinity,
                                 height: 48,
@@ -425,7 +461,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // GitHub sign-in
+                              // github sign in button 
                               SizedBox(
                                 width: double.infinity,
                                 height: 48,
@@ -455,8 +491,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+  // runs when the screen is closed 
     _emailController.dispose();
     _passwordController.dispose();
+    // free memory to avoid leaks
     super.dispose();
   }
 }

@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+// flutter's built in ui widgets
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// riverpod for state management lets this screen read the auth providers
 import 'package:tpmentorship/providers/auth_provider.dart';
+// the providers that hold the auth service
 import 'package:tpmentorship/services/auth_service.dart';
+// the auth service that talks to firebase
 import 'package:tpmentorship/theme/app_theme.dart';
+// app colours and styling
 import 'package:tpmentorship/utils/snackbar_helper.dart';
+// helper to show popup messages
 import 'package:tpmentorship/utils/validators.dart';
+// helper to check if the email field is valid
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
+// forgot password screen, sends a reset link to the user email
   final VoidCallback onGoToLogin;
+  // go back to the login screen
 
-  /// Label for the bottom link. Defaults to 'Back to Login' for the pre-login
-  /// flow; when this screen is pushed from Change Password, the caller passes
-  /// 'Back' because tapping it returns there, not to the login screen.
   final String backLabel;
+  // text shown on the back link defaults to "Back to Login"
 
   const ForgotPasswordScreen({
     super.key,
@@ -27,29 +34,38 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  // validate the email field
   final _emailController = TextEditingController();
+  // grab whatever the user types into the email box
   bool _isLoading = false;
+  // true while sending the email used to show spinner and disable button
 
   void _showSnackBar(String message, {bool success = false}) {
     if (!mounted) return;
+    // if the screen was closed while loading dont display popup
     showAppSnackBar(context, message, success: success);
   }
 
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
+    // check if email valid
     setState(() => _isLoading = true);
+    // turn on loading spinner
     try {
       await ref
           .read(authServiceProvider)
           .sendPasswordResetEmail(_emailController.text);
+          // ask firebase to send a reset email
       _showSnackBar(
         'Password reset link sent! Check your email.',
         success: true,
       );
     } catch (e) {
       _showSnackBar(AuthService.friendlyError(e));
+      // if it fails show error msg
     } finally {
       if (mounted) setState(() => _isLoading = false);
+      // always turn the loading spinner back off when done
     }
   }
 
@@ -58,13 +74,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBg,
       body: SafeArea(
+      // keep content out from under the notch/status bar
         child: SingleChildScrollView(
+        // makes the form scrollable so it doesn't overflow
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
+            // validate the email field
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // go back to log in
                 Align(
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
@@ -104,6 +124,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // valid email
                 TextFormField(
                   controller: _emailController,
                   style: const TextStyle(color: AppTheme.textPrimary),
@@ -117,6 +138,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 28),
 
+                // send reset link button disabled and shows a spinner while loading
                 ElevatedButton(
                   onPressed: _isLoading ? null : _resetPassword,
                   child: _isLoading
@@ -133,9 +155,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // back to login at bottom
                 Center(
                   child: GestureDetector(
                     onTap: widget.onGoToLogin,
+                    // tapping this goes back to the login screen
                     child: Text(
                       widget.backLabel,
                       style: const TextStyle(
@@ -156,7 +180,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   void dispose() {
+  // runs when the screen is closed for good
     _emailController.dispose();
+    // free the controllers memory to avoid leaks
     super.dispose();
   }
 }

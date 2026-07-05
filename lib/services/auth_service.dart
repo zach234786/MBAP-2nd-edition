@@ -8,10 +8,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 // responsible for the google popup after user clicks the google sign in button
 
 
-class AuthService {
-// handles all things related to authentication (register, login, logout, etc).
+class AuthService { 
+// handles all things related to authentication (register, login, logout, etc). 
 // makes it easier for screens to call on authenication functions without having to deal with firebase directly
-
+  
   final FirebaseAuth _auth = FirebaseAuth.instance;
 // save login system as a private variable (_auth) so its only usable within the class
 // prevents other parts of the app from accessing it directly and cause bugs
@@ -25,7 +25,7 @@ class AuthService {
   Future<void> updateDisplayName(String name) async {
   // changes the display name of the user once they are logged in with a valid account.
     final user = _auth.currentUser;
-    // saves current user as a variable
+    // saves current user as a variable 
     if (user == null) {
     // if user not logged in, throw an error
       throw FirebaseAuthException(code: 'requires-recent-login');
@@ -69,7 +69,7 @@ class AuthService {
       name: 'registrationTemp_${DateTime.now().millisecondsSinceEpoch}',
       options: Firebase.app().options,
     );
-    try {
+    try { 
       final FirebaseAuth tempAuth = FirebaseAuth.instanceFor(app: tempApp);
       // create a temporary firebase auth instance for the temp app
       try {
@@ -91,7 +91,7 @@ class AuthService {
       }
     } finally {
       await tempApp.delete();
-      // always delete temp app after try
+      // always delete temp app after try 
     }
   }
 
@@ -111,7 +111,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
-  // logout user
+  // logout user 
     if (!kIsWeb) {
     // check if app is running on mobile and sign out of google if user logged in with google
     // not necessary for web because google sign in is handled by a popup and closes with the browser
@@ -139,7 +139,7 @@ class AuthService {
   }
 
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
-  // check if user email is verified
+  // check if user email is verified 
   // true if yes, false if no, or if user not logged in
 
   Future<void> reloadUser() async {
@@ -149,7 +149,7 @@ class AuthService {
 
   bool get isEmailPasswordAccount =>
   // check if user can change password
-  // only can change if logged in with email and password
+  // only can change if logged in with email and password 
       _auth.currentUser?.providerData
       // check if user logged in with email and password or other providers (google/git)
           .any((info) => info.providerId == 'password') ??
@@ -162,7 +162,7 @@ class AuthService {
   }) async {
     final user = _auth.currentUser;
     if (user == null || user.email == null) {
-      // check if user is logged in
+      // check if user is logged in 
       // check if user has email (if logged in with google/git, no email)
       throw FirebaseAuthException(code: 'requires-recent-login');
       // if no credentials, throw error and ask user to relogin
@@ -176,7 +176,7 @@ class AuthService {
     try {
       await user.reauthenticateWithCredential(credential);
     } catch (e) {
-      // if wrong password, throw error
+      // if wrong password, throw error 
       if (!_isKnownBugError(e)) rethrow;
     }
 
@@ -204,7 +204,7 @@ class AuthService {
   Future<void> signInWithGoogle() async {
     if (kIsWeb) {
       // web method
-      // firebase handles the google popup directly
+      // firebase handles the google popup directly 
       await _ignoreKnownBugIf(
         action: () => _auth.signInWithPopup(GoogleAuthProvider()),
         succeeded: () => _auth.currentUser != null,
@@ -221,7 +221,7 @@ class AuthService {
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
-    // get auth tokens to use in firebase sign in
+    // get auth tokens to use in firebase sign in 
     // firebase uses these tokens to verify the user and create a session
     );
     await _ignoreKnownBugIf(

@@ -5,8 +5,6 @@ import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/widgets/mentor_card.dart';
 
 class SearchScreen extends StatefulWidget {
-  /// Called with the mentor whose card was tapped, so the navigator can show
-  /// that mentor's profile (not a hardcoded one).
   final ValueChanged<Mentor>? onMentorTap;
   final VoidCallback? onBack;
 
@@ -48,7 +46,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Column(
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -82,7 +79,6 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Search Bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -117,7 +113,6 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Popular Searches
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -157,7 +152,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Browse By Subject
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -190,7 +184,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Browse By Mentor Ratings
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -296,7 +289,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       onTap: () => widget.onMentorTap?.call(mentor),
                     ),
                   )),
-              // "More" card
               SizedBox(
                 width: 110,
                 child: Container(

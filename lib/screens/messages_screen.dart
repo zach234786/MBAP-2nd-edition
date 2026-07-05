@@ -22,7 +22,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -56,7 +55,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Search Bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -86,7 +84,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Mentor Avatar Row — centered
         SizedBox(
           height: 90,
           child: Row(
@@ -159,7 +156,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ),
         ),
 
-        // Messages List
         Expanded(
           child: ListView.builder(
             itemCount: messages.length,
