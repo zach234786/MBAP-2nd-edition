@@ -1,104 +1,107 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+// detect whether the app is running on the web or mobile for google and git sign in
 import 'package:firebase_core/firebase_core.dart';
+// connect app with firebase project
 import 'package:firebase_auth/firebase_auth.dart';
+// handles authentication with firebase (register, login, etc)
 import 'package:google_sign_in/google_sign_in.dart';
+// responsible for the google popup after user clicks the google sign in button
 
-/// AuthService wraps all Firebase Authentication logic in one place.
-/// The UI never talks to FirebaseAuth directly - it goes through here.
-/// This keeps the separation between UI and logic that the rubric asks for.
+
 class AuthService {
+// handles all things related to authentication (register, login, logout, etc).
+// makes it easier for screens to call on authenication functions without having to deal with firebase directly
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  /// A live stream that tells us whenever the user logs in or out.
+// save login system as a private variable (_auth) so its only usable within the class
+// prevents other parts of the app from accessing it directly and cause bugs
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  /// The currently signed-in user (or null if nobody is signed in).
+// check is user logged in or not and returns the current user if logged in
   User? get currentUser => _auth.currentUser;
-
-  /// The name the app should call the user ('' when not set yet).
+// get the current user if logged in, otherwise return null
   String get displayName => _auth.currentUser?.displayName?.trim() ?? '';
+// get the display name of the current user if logged in, otherwise return an empty string
 
-  /// Saves the user's display name (what the app greets them with), then
-  /// reloads so the new name is available immediately.
   Future<void> updateDisplayName(String name) async {
+  // changes the display name of the user once they are logged in with a valid account.
     final user = _auth.currentUser;
+    // saves current user as a variable
     if (user == null) {
+    // if user not logged in, throw an error
       throw FirebaseAuthException(code: 'requires-recent-login');
     }
     await user.updateDisplayName(name.trim());
+    // remove spaces and update new name
     await user.reload();
+    // reload the user to update with the new data
   }
 
-  /// There is a known firebase_auth bug where the native bridge ("Pigeon")
-  /// throws a type-cast error even when the operation actually SUCCEEDED.
-  /// This helper runs [action] and swallows that false error - but ONLY when
-  /// [succeeded] confirms the operation really worked (e.g. we are now signed
-  /// in). Real failures are rethrown. Centralised here so every auth method
-  /// handles the bug the same way.
   Future<void> _ignoreKnownBugIf({
+  // firebase auth has a known bug that throws an error even if nothing went wrong
+  // this ignores the error if action is confirmed to have worked successfully
     required Future<void> Function() action,
+    // try to perform the action (register, login, etc)
     required bool Function() succeeded,
+    // check if it worked
   }) async {
     try {
       await action();
     } catch (e) {
       if (!succeeded()) rethrow;
+      // if action is actually not working, throw error, if succeeeded, ignore and continue
     }
   }
 
-  /// Recognises the same known bug by its error shape, for operations (like
-  /// changing a password) whose success cannot be confirmed by checking
-  /// [currentUser] afterwards.
   static bool _isKnownBugError(Object e) =>
       e is TypeError && e.toString().contains('Pigeon');
+  // checks if the error is a Pigeon error.
+  // Pigeon is a code generation tool that helps Flutter apps communicate with platform-specific code.
 
-  /// REGISTER a new account with email + password.
-  ///
-  /// We create the account on a SEPARATE, temporary Firebase app so that
-  /// creating it does NOT sign the user into the main app. This way, after
-  /// registering, the user is sent back to the login screen to log in
-  /// manually (instead of being dropped straight into the app).
   Future<void> register({
+  // register new user with name email and password
     required String name,
     required String email,
     required String password,
   }) async {
+    // create a temporary firebase app to register new user
+    // this allows user to create account without logging into the main app straight away
     final FirebaseApp tempApp = await Firebase.initializeApp(
       name: 'registrationTemp_${DateTime.now().millisecondsSinceEpoch}',
       options: Firebase.app().options,
     );
     try {
       final FirebaseAuth tempAuth = FirebaseAuth.instanceFor(app: tempApp);
+      // create a temporary firebase auth instance for the temp app
       try {
         final credential = await tempAuth.createUserWithEmailAndPassword(
+        // create new user with email and password
           email: email.trim(),
           password: password,
         );
-        // Save the name from the register form so the app can greet the
-        // user with it after they log in (stored on Firebase's servers).
         await credential.user?.updateDisplayName(name.trim());
+        // save user's name to firebase
         await credential.user?.sendEmailVerification();
+        // send user email verification to confirm their email address
       } catch (e) {
-        // The known bug (see _ignoreKnownBugIf) can throw a type-cast error
-        // even when the account WAS created. This is handled inline instead
-        // of with the shared helper because the recovery path also has to
-        // redo the name + verification steps the try block never reached.
+        // account was not created, rethrow error
         if (tempAuth.currentUser == null) rethrow;
+        // account was created, error was a Pigeon errpr, ignore error and continue
         await tempAuth.currentUser?.updateDisplayName(name.trim());
         await tempAuth.currentUser?.sendEmailVerification();
       }
     } finally {
-      await tempApp.delete(); // always clean up the temporary app
+      await tempApp.delete();
+      // always delete temp app after try
     }
   }
 
-  /// LOGIN with email + password. Login can succeed but still throw the
-  /// known bug's cast error - if we ARE signed in afterwards, it worked.
   Future<void> login({
+  // login with email and password
     required String email,
     required String password,
   }) {
     return _ignoreKnownBugIf(
+    // if theres a known bug error, ignore and continue
       action: () => _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -107,149 +110,148 @@ class AuthService {
     );
   }
 
-  /// LOGOUT the current user (also signs out of Google on mobile if used).
   Future<void> logout() async {
-    // google_sign_in is only wired up on mobile. On web we sign in with
-    // Firebase's popup instead, and calling GoogleSignIn().signOut() there
-    // throws (no web client id), which would block the Firebase sign-out.
+  // logout user
     if (!kIsWeb) {
+    // check if app is running on mobile and sign out of google if user logged in with google
+    // not necessary for web because google sign in is handled by a popup and closes with the browser
       try {
         await GoogleSignIn().signOut();
-      } catch (_) {
-        // Best effort - never let this stop the Firebase sign-out below.
-      }
+      } catch (_) {}
     }
     await _auth.signOut();
+    // sign out of firebase auth
   }
 
-  /// FORGOT PASSWORD - sends a reset link to the email.
   Future<void> sendPasswordResetEmail(String email) {
+  // send password reset email to user if forgot password
     return _auth.sendPasswordResetEmail(email: email.trim());
+    // remove spaces and send email
   }
 
-  /// ACCOUNT MANAGEMENT (extra feature 1): resend the verification email.
   Future<void> sendEmailVerification() async {
+    // send email verification if email not verified yet
     final user = _auth.currentUser;
     if (user == null) throw FirebaseAuthException(code: 'requires-recent-login');
+    // make sure user logged in befor sending email verification. throw error if not
     await user.sendEmailVerification();
+    // send email verification to user
   }
 
-  /// Returns true if the signed-in user has verified their email.
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
+  // check if user email is verified
+  // true if yes, false if no, or if user not logged in
 
-  /// Refreshes the current user's data from the Firebase servers. Needed
-  /// because [isEmailVerified] is cached locally, so it won't reflect an email
-  /// verified on another device until we reload.
   Future<void> reloadUser() async {
+  // reload user data to get latest info (like email verification status)
     await _auth.currentUser?.reload();
   }
 
-  /// Returns true if the user signed in with email + password (i.e. they have
-  /// the 'password' provider), as opposed to a federated provider like Google
-  /// or GitHub. Email-only features (change password, resend verification) are
-  /// gated on this — federated accounts have no password to reauthenticate
-  /// with, even if they expose an email address.
   bool get isEmailPasswordAccount =>
+  // check if user can change password
+  // only can change if logged in with email and password
       _auth.currentUser?.providerData
+      // check if user logged in with email and password or other providers (google/git)
           .any((info) => info.providerId == 'password') ??
+          // check if there's "password" and returns true if yes
       false;
 
-  /// ACCOUNT MANAGEMENT (extra feature 2): change the password.
-  /// Requires reauthentication first with the old password.
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
   }) async {
     final user = _auth.currentUser;
     if (user == null || user.email == null) {
+      // check if user is logged in
+      // check if user has email (if logged in with google/git, no email)
       throw FirebaseAuthException(code: 'requires-recent-login');
+      // if no credentials, throw error and ask user to relogin
     }
 
-    // Reauthenticate with old password
     final credential = EmailAuthProvider.credential(
+    // check if user remember their old password
       email: user.email!,
       password: oldPassword,
     );
-    // Reauth/update success can't be confirmed via currentUser, so here we
-    // recognise the known bug by its error shape instead.
     try {
       await user.reauthenticateWithCredential(credential);
     } catch (e) {
+      // if wrong password, throw error
       if (!_isKnownBugError(e)) rethrow;
     }
 
-    // Update to new password (separate try/catch in case this also has the bug)
     try {
       await user.updatePassword(newPassword);
+      // change to new password if old password is correct
     } catch (e) {
       if (!_isKnownBugError(e)) rethrow;
     }
   }
 
-  /// ACCOUNT MANAGEMENT (extra feature 3): permanently delete the account
-  /// from Firebase. Deleting also signs the user out, so the AuthGate returns
-  /// to the login screen automatically.
-  ///
-  /// Firebase requires a RECENT login to delete. If the session is too old it
-  /// throws 'requires-recent-login', which the UI turns into a friendly
-  /// "log out and log back in" message.
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) {
       throw FirebaseAuthException(code: 'requires-recent-login');
+      // login check
     }
-    // If the account is actually gone, currentUser is now null - only surface
-    // real failures (e.g. requires-recent-login, which leaves the user set).
     await _ignoreKnownBugIf(
+      // delete account and ignore pigeon error
       action: user.delete,
       succeeded: () => _auth.currentUser == null,
     );
   }
 
-  /// AUTH METHOD not taught in class (1): Google Sign-in.
   Future<void> signInWithGoogle() async {
-    // On the web, the google_sign_in package's signIn() is not supported
-    // (it has no access token and needs a rendered button). Firebase's own
-    // popup flow handles Google sign-in directly in the browser instead.
     if (kIsWeb) {
+      // web method
+      // firebase handles the google popup directly
       await _ignoreKnownBugIf(
         action: () => _auth.signInWithPopup(GoogleAuthProvider()),
         succeeded: () => _auth.currentUser != null,
       );
       return;
     }
-
+    // mobile method
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    if (googleUser == null) return; // user cancelled the popup
+    // open google sign in as a popup and get account if user is logged in
+    if (googleUser == null) return;
+    // stop is user cancels googlee sign in
     final GoogleSignInAuthentication googleAuth =
         await googleUser.authentication;
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
+    // get auth tokens to use in firebase sign in
+    // firebase uses these tokens to verify the user and create a session
     );
     await _ignoreKnownBugIf(
       action: () => _auth.signInWithCredential(credential),
       succeeded: () => _auth.currentUser != null,
+      // check if user is logged in after signing in with google and ignore pigeon error if login successful
     );
   }
 
-  /// AUTH METHOD not taught in class (2): GitHub Sign-in.
   Future<void> signInWithGitHub() {
     final githubProvider = GithubAuthProvider();
+    // create github provider to handle github sign in
     return _ignoreKnownBugIf(
-      // Web opens a GitHub OAuth popup; mobile/desktop opens a native
-      // OAuth web flow.
       action: () => kIsWeb
           ? _auth.signInWithPopup(githubProvider)
+          // if use web then open popup with firebase
           : _auth.signInWithProvider(githubProvider),
+          // if use mobile open native flow
+          // firebase opens a native oauth browser flow then user logs in then firebase gets the result
       succeeded: () => _auth.currentUser != null,
+      // check if user is logged in after signing in with github and ignore pigeon error if login successful
     );
   }
 
-  /// Turns Firebase error codes into friendly messages for the user.
   static String friendlyError(Object error) {
     if (error is FirebaseAuthException) {
+      // check if error is a fiirebase error
       switch (error.code) {
+        // turn on error code
+        // match error code with a friendly message to show to user
         case 'invalid-email':
           return 'That email address looks invalid.';
         case 'user-disabled':
@@ -277,9 +279,11 @@ class AuthService {
         case 'network-request-failed':
           return 'No internet connection. Please try again.';
         default:
+        // if code not recognised show default msg
           return error.message ?? 'Something went wrong. Please try again.';
       }
     }
     return 'Something went wrong. Please try again.';
+    // only for non firebase errors
   }
 }
