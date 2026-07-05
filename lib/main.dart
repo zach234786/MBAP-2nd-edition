@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:tpmentorship/firebase_options.dart';
+import 'package:flutter/material.dart'; // import built in material design package for flutter
+import 'package:firebase_core/firebase_core.dart'; // import firebase core package to initialize firebase
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // import flutter riverpod package for state management
+// import configuration for firebase project
+import 'package:tpmentorship/firebase_options.dart'; 
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/services/auth_service.dart';
 import 'package:tpmentorship/theme/app_theme.dart';
 import 'package:tpmentorship/utils/snackbar_helper.dart';
+// import display screens below
 import 'package:tpmentorship/screens/home_screen.dart';
 import 'package:tpmentorship/screens/search_screen.dart';
 import 'package:tpmentorship/screens/messages_screen.dart';
@@ -17,39 +18,43 @@ import 'package:tpmentorship/screens/register_screen.dart';
 import 'package:tpmentorship/screens/forgot_password_screen.dart';
 import 'package:tpmentorship/screens/change_password_screen.dart';
 
-/// Global handle to the app's Navigator so AuthGate can clear any pushed
-/// screens (e.g. Change Password) when the user signs out.
 final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+// handle to clear all previous navigation history when users wants to sign out
+// this prevents the user from going back to protected screens that requires log in
 
 Future<void> main() async {
-  // Make sure Flutter is ready before we talk to Firebase.
   WidgetsFlutterBinding.ensureInitialized();
+  // initialise flutter so firebase can be initialised
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+    // connect to firebase project 
   );
-  // ProviderScope turns on Riverpod for the whole app.
   runApp(const ProviderScope(child: MyApp()));
+  // enable riverpod state management for the app
 }
 
 class MyApp extends StatelessWidget {
+  // StatelessWidget is a widget that does not have mutable state
+  // root settings for the entire app
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // builds and returns what the app should look like
       title: 'TP Mentorship',
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
+      // remove debug in top right
       theme: AppTheme.darkTheme,
-      // Removes the stretchy / elastic overscroll effect on all screens.
       scrollBehavior: const NoStretchScrollBehavior(),
+      // remove bouncy overscroll effect
       home: const AuthGate(),
     );
   }
 }
 
-/// A scroll behaviour that disables the bouncy/stretchy overscroll so the
-/// screens do not visually "stretch" when you drag past the top or bottom.
+// this is the class that controls the scroll behaviour (purely aesthetic)
 class NoStretchScrollBehavior extends MaterialScrollBehavior {
   const NoStretchScrollBehavior();
 
@@ -59,28 +64,23 @@ class NoStretchScrollBehavior extends MaterialScrollBehavior {
     Widget child,
     ScrollableDetails details,
   ) {
-    // Return the child as-is = no glow and no stretch indicator.
     return child;
   }
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
-    // Clamping = stops firmly at the edges, no elastic bounce.
     return const ClampingScrollPhysics();
   }
 }
 
-/// AuthGate decides what to show based on REAL Firebase login state.
-/// - Logged in  -> MainNavigator (the 5-tab app)
-/// - Logged out -> AuthFlow (login / register / forgot password)
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
+  // watches auth state and decides if user is logged in or not and shows the appropriate screen
+  // ConsumerWidget is a widget that can read providers and rebuild when they change
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // When the user signs out (or their account is deleted), swap back to the
-    // login flow AND pop any screens that were pushed on top (e.g. Change
-    // Password) - otherwise a pushed route would stay visible above AuthGate.
+    // listen to auth state changes and clear all previous navigation history so user doesnt get stuck on protected screens
     ref.listen(authStateProvider, (previous, next) {
       if (next.hasValue && next.value == null) {
         _navigatorKey.currentState?.popUntil((route) => route.isFirst);
@@ -88,21 +88,27 @@ class AuthGate extends ConsumerWidget {
     });
 
     final authState = ref.watch(authStateProvider);
+    // watch current auth state and rebuild when it changes
 
     return authState.when(
+      // handle loading, error and data states 
       data: (user) {
+        // check if user is logged in or not and show the appropriate screens
         if (user != null) {
           return const MainNavigator();
         }
         return const AuthFlow();
       },
+
       loading: () => const Scaffold(
+      // loading wheel
         backgroundColor: AppTheme.darkBg,
         body: Center(
           child: CircularProgressIndicator(color: AppTheme.tpRed),
         ),
       ),
       error: (err, stack) => Scaffold(
+        // show error message if there is an error in auth state
         backgroundColor: AppTheme.darkBg,
         body: Center(
           child: Text(
@@ -115,19 +121,23 @@ class AuthGate extends ConsumerWidget {
   }
 }
 
-/// Handles switching between the three auth screens.
 class AuthFlow extends StatefulWidget {
   const AuthFlow({super.key});
-
+  // StatefulWidget is a widget that has mutable state and can rebuild when the state changes
+  
   @override
   State<AuthFlow> createState() => _AuthFlowState();
+  // creates a separate _AuthFlowState to hold that state
+  // only within the class itself
 }
 
 class _AuthFlowState extends State<AuthFlow> {
-  String _screen = 'login'; // login, register, forgot_password
+  String _screen = 'login';
+  // tracks what screen to show
 
   @override
   Widget build(BuildContext context) {
+    // if _screen switches, display the matching screen
     switch (_screen) {
       case 'register':
         return RegisterScreen(
@@ -148,35 +158,38 @@ class _AuthFlowState extends State<AuthFlow> {
   }
 }
 
-/// The main app shell with the 5-tab BottomNavigationBar.
 class MainNavigator extends ConsumerStatefulWidget {
   const MainNavigator({super.key});
+  // ConsumerStateful Widget is a widget that has mutable state and can read providers and rebuild when they change
 
   @override
   ConsumerState<MainNavigator> createState() => _MainNavigatorState();
+  // creates a separate _MainNavigatorState to hold that state
 }
 
 class _MainNavigatorState extends ConsumerState<MainNavigator> {
   int _selectedIndex = 0;
-
+  // tracks what screen to show in the main navigator (starts at home screen)
+  
   @override
   void initState() {
+    // runs once when the widget is first created 
     super.initState();
-    // After the first frame, ask Google/GitHub users without a display name
-    // what the app should call them. Email/password users already set a
-    // name on the register form, so they are never prompted.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _promptForNameIfNeeded());
+        // check is user has display name set, if not prompt user to set it
   }
 
-  /// The name the app greets the user with (from Firebase's displayName).
   String get _greetingName {
+    // get user display name from auth service, if not set return 'Student' as default
     final name = ref.read(authServiceProvider).displayName;
     return name.isNotEmpty ? name : 'Student';
   }
 
   Future<void> _promptForNameIfNeeded() async {
+    // if user signed in with google/git but has no display name set, prompt user to set it
     final authService = ref.read(authServiceProvider);
+    // if widget is not mounted (already destroyed), user signed in with email/password or user has display name set, skip
     if (!mounted ||
         authService.isEmailPasswordAccount ||
         authService.displayName.isNotEmpty) {
@@ -184,9 +197,11 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     }
 
     final controller = TextEditingController();
+    // grab text input from user to set display name
     await showDialog<void>(
       context: context,
-      barrierDismissible: false, // the app needs a name to greet them with
+      barrierDismissible: false,
+      // user cannot dismiss the dialog by tapping outside of it, field is required
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.darkCardBg,
         title: const Text(
@@ -202,7 +217,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
         actions: [
           TextButton(
             onPressed: () {
-              if (controller.text.trim().isEmpty) return; // need a name
+              if (controller.text.trim().isEmpty) return;
               Navigator.pop(dialogContext);
             },
             child: const Text('Save',
@@ -214,6 +229,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     );
 
     final name = controller.text.trim();
+    // save name to firebase 
     controller.dispose();
     if (name.isEmpty) return;
     try {
@@ -221,50 +237,54 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     } catch (e) {
       if (mounted) _showSnackBar(AuthService.friendlyError(e));
     }
-    // Rebuild so the Home greeting and Mentor Profile pick up the new name.
     if (mounted) setState(() {});
   }
 
+// change the selected tab and rebuild the widget when user taps on a bottom navigation item
   void _onNavItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
 
+// show a snackbar with the given message but only if widget is still mounted (not destroyed)
   void _showSnackBar(String message) {
-    // The mounted guard matters here: some callers await first (e.g. resend
-    // verification), and this State could be disposed by then.
     if (!mounted) return;
     showAppSnackBar(context, message);
   }
 
+// log the user out and show a snackbar if there is an error
   void _logout() {
     ref.read(authServiceProvider).logout().catchError((Object e) {
       if (mounted) _showSnackBar(AuthService.friendlyError(e));
     });
   }
 
-  /// Confirms with the user, then permanently deletes their Firebase account.
-  /// On success the auth state changes and AuthGate returns to the login screen.
+// show confirmation dialog when deleting acc, then delete after confirming
   Future<void> _deleteAccount() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDialog<bool>( 
+      // open a dialog to confirm if user wants to delete their account
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.darkCardBg,
         title: const Text(
+          // title
           'Delete Account',
           style: TextStyle(color: AppTheme.textPrimary),
         ),
         content: const Text(
+          // content 
           'This permanently deletes your account. This cannot be undone.',
           style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
+            // cancel button
             child: const Text('Cancel',
                 style: TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
+            // delete button
             child: const Text('Delete',
                 style: TextStyle(
                     color: AppTheme.tpRed, fontWeight: FontWeight.w700)),
@@ -273,24 +293,22 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
       ),
     );
     if (confirmed != true) return;
+    // stop here if user cancels the dialog
 
     try {
       await ref.read(authServiceProvider).deleteAccount();
-      // Success: user is signed out, AuthGate swaps back to the login screen.
+      // call from auth service to delete the account
     } catch (e) {
       if (mounted) _showSnackBar(AuthService.friendlyError(e));
+      // show error message if there is an error deleting the account
     }
   }
-
-  /// Opens a Settings sheet with the account-management features:
-  /// change password, email verification, and delete account.
+  // open settings button in the profile screen
   void _openSettings() {
     final authService = ref.read(authServiceProvider);
-    // Show the sheet immediately, then refresh the user in the background so
-    // the "Email Verified" status updates once fresh data arrives (it's cached
-    // locally until we reload). A one-time guard keeps it to a single reload.
     var reloadStarted = false;
     showModalBottomSheet(
+      // opens a bottom sheet to show account settings
       context: context,
       backgroundColor: AppTheme.darkCardBg,
       shape: const RoundedRectangleBorder(
@@ -298,14 +316,15 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
+          // StatefulBuilder allows the bottom sheet to rebuild when the state changes (when email becomes verfied)
           builder: (context, setSheetState) {
             if (!reloadStarted) {
+              // if reload has not started, start it and reload the user to check if email is verified
               reloadStarted = true;
               authService.reloadUser().then((_) {
                 if (sheetContext.mounted) setSheetState(() {});
-              }).catchError((_) {
-                // Ignore refresh failures; keep showing cached status.
-              });
+                // rebuilds the bottom sheet when new data arrives (email verfication)
+              }).catchError((_) {});
             }
             return SafeArea(
               child: Column(
@@ -325,11 +344,13 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
               ListTile(
                 leading: const Icon(Icons.lock_reset, color: AppTheme.tpRed),
                 title: const Text('Change Password',
+                // change password button, only available for email/password accounts
                     style: TextStyle(color: AppTheme.textPrimary)),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   if (!authService.isEmailPasswordAccount) {
                     _showSnackBar('Only available for email/password accounts');
+                    // show snackbar if user is not using email/password account
                   } else {
                     Navigator.push(
                       context,
@@ -340,9 +361,6 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ForgotPasswordScreen(
-                                  // Here "back" returns to Change Password
-                                  // (the user is logged in), so don't label
-                                  // the link "Back to Login".
                                   backLabel: 'Back',
                                   onGoToLogin: () => Navigator.pop(context),
                                 ),
@@ -355,7 +373,8 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                   }
                 },
               ),
-              ListTile(
+              ListTile( 
+                // email verification button
                 leading: Icon(
                   authService.isEmailVerified
                       ? Icons.verified
@@ -364,20 +383,25 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                 ),
                 title: Text(
                   authService.isEmailVerified
+                  // different states of the email verification button depending on if the email is verified or not
                       ? 'Email Verified'
                       : 'Resend Verification Email',
                   style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 onTap: () async {
+                  // different outputs depending on the user
                   Navigator.pop(sheetContext);
                   if (!authService.isEmailPasswordAccount) {
                     _showSnackBar('Only available for email/password accounts');
+                    // if account is signed in with google/git, skip
                   } else if (authService.isEmailVerified) {
                     _showSnackBar('Your email is already verified!');
+                    // if email is already verified, skip
                   } else {
                     try {
                       await authService.sendEmailVerification();
                       _showSnackBar('Verification email sent!');
+                      // if email not verified send email
                     } catch (e) {
                       _showSnackBar(AuthService.friendlyError(e));
                     }
@@ -385,6 +409,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                 },
               ),
               ListTile(
+                // delete account button
                 leading:
                     const Icon(Icons.delete_forever, color: AppTheme.tpRed),
                 title: const Text(
@@ -393,7 +418,7 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _deleteAccount();
+                  _deleteAccount(); 
                 },
               ),
                   const SizedBox(height: 8),
@@ -408,50 +433,69 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold( 
+      // Scaffold is a widget that provides a basic material design visual layout structure
       backgroundColor: AppTheme.darkBg,
       body: SafeArea(
+        // prevents content from being drawn under system status bar, notches, etc
         child: IndexedStack(
+          // IndexedStack shows all 5 screens but only the selected index is displayed
+          // preserves the state of other screens when switching between them (scroll position etc.)
           index: _selectedIndex,
           children: [
             HomeScreen(
+              // home screen is the first screen that is displayed when user logs in
               userName: _greetingName,
-              // Tapping a mentor card just shows a small popup for now -
-              // browsing OTHER mentors' profiles is Part 3 scope.
               onMentorTap: (mentor) =>
                   _showSnackBar("Opening ${mentor.name}'s profile"),
+                  // to be configured in part 3, shows snackbar for now
               onSessionTap: () => _showSnackBar('Session details'),
+              // to be configured in part 3, shows snackbar for now
               onViewAllSessions: () => _showSnackBar('Viewing all sessions'),
+              // to be configured in part 3, shows snackbar for now
               onViewAllMessages: () => setState(() => _selectedIndex = 2),
+              // navigate to messages screen when user taps view all messages
               onNavigateToSearch: () => setState(() => _selectedIndex = 1),
+              // navigate to search screen when user clicks on the navbar 
               onNavigateToMessages: () => setState(() => _selectedIndex = 2),
+              // navigate to messages screen when user clicks on the navbar
             ),
             SearchScreen(
               onMentorTap: (mentor) =>
                   _showSnackBar("Opening ${mentor.name}'s profile"),
+                  // to be configured in part 3, shows snackbar for now
               onBack: () => setState(() => _selectedIndex = 0),
+              // go back to home screen when user taps back button
             ),
             MessagesScreen(
               onBack: () => setState(() => _selectedIndex = 0),
+              // go back to home screen when user taps back button
             ),
             ProfileScreen(
               userName: _greetingName,
+              // welcome message 
               onEditProfile: () => _showSnackBar('Edit profile - coming soon'),
+              // to be configured in part 3, shows snackbar for now
               onSettings: _openSettings,
+              // open settings bottom modal screen
               onLogout: _logout,
+              // open logout
               onSeeMore: () => _showSnackBar('See more features'),
+              // to be configured in part 3, shows snackbar for now
               onBack: () => setState(() => _selectedIndex = 0),
+              // go back home
             ),
             MentorProfileScreen(
-              // The tab shows the LOGGED-IN user's own mentor profile,
-              // greeting them by their chosen display name.
               userName: _greetingName,
+              // make sure profile name is same as greeting name
               onBack: () => setState(() => _selectedIndex = 0),
+              // go back home
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        // display all the different tabs user can navigate to
         currentIndex: _selectedIndex,
         onTap: _onNavItemTapped,
         items: const [
