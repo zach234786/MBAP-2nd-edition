@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [AppTheme.tpRedLight, AppTheme.tpRed],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -194,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               const SizedBox(height: 16),
 
                               RichText(
-                                text: const TextSpan(
+                                text: TextSpan(
                                   children: [
                                     TextSpan(
                                       text: 'TP ',
@@ -216,7 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              const Text(
+                              Text(
                                 'Connect. Learn. Grow Together',
                                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                               ),
@@ -226,14 +226,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
+                                  Text(
                                     "Don't have an account? ",
                                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                                   ),
                                   GestureDetector(
                                     onTap: widget.onGoToRegister,
                                     // tapping this calls the function to switch to the register screen
-                                    child: const Text(
+                                    child: Text(
                                       'Register Here.',
                                       style: TextStyle(
                                         color: AppTheme.tpRed,
@@ -259,11 +259,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     // email field, displayed as a Student ID
                                     TextFormField(
                                       controller: _emailController,
-                                      style: const TextStyle(color: AppTheme.textPrimary),
+                                      style: TextStyle(color: AppTheme.textPrimary),
                                       keyboardType: TextInputType.emailAddress,
                                       decoration: InputDecoration(
                                         hintText: 'Student ID',
-                                        hintStyle: const TextStyle(color: AppTheme.textSecondary),
+                                        hintStyle: TextStyle(color: AppTheme.textSecondary),
                                         prefixIcon: Container(
                                           margin: const EdgeInsets.all(10),
                                           padding: const EdgeInsets.all(8),
@@ -271,22 +271,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             color: AppTheme.darkBg,
                                             borderRadius: BorderRadius.circular(8),
                                           ),
-                                          child: const Icon(Icons.person_outline,
+                                          child: Icon(Icons.person_outline,
                                               color: AppTheme.textSecondary, size: 18),
                                         ),
                                         fillColor: AppTheme.darkBg,
                                         filled: true,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.darkBorder),
+                                          borderSide: BorderSide(color: AppTheme.darkBorder),
                                         ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.darkBorder),
+                                          borderSide: BorderSide(color: AppTheme.darkBorder),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.tpRed, width: 2),
+                                          borderSide: BorderSide(color: AppTheme.tpRed, width: 2),
                                         ),
                                       ),
                                       validator: (value) => Validators
@@ -298,12 +298,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     // password field, with the eye icon to show/hide
                                     TextFormField(
                                       controller: _passwordController,
-                                      style: const TextStyle(color: AppTheme.textPrimary),
+                                      style: TextStyle(color: AppTheme.textPrimary),
                                       obscureText: _obscurePassword,
                                       // hides the text when true
                                       decoration: InputDecoration(
                                         hintText: 'Password',
-                                        hintStyle: const TextStyle(color: AppTheme.textSecondary),
+                                        hintStyle: TextStyle(color: AppTheme.textSecondary),
                                         prefixIcon: Container(
                                           margin: const EdgeInsets.all(10),
                                           padding: const EdgeInsets.all(8),
@@ -311,7 +311,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             color: AppTheme.darkBg,
                                             borderRadius: BorderRadius.circular(8),
                                           ),
-                                          child: const Icon(Icons.lock_outline,
+                                          child: Icon(Icons.lock_outline,
                                               color: AppTheme.textSecondary, size: 18),
                                         ),
                                         suffixIcon: IconButton(
@@ -330,15 +330,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         filled: true,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.darkBorder),
+                                          borderSide: BorderSide(color: AppTheme.darkBorder),
                                         ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.darkBorder),
+                                          borderSide: BorderSide(color: AppTheme.darkBorder),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: AppTheme.tpRed, width: 2),
+                                          borderSide: BorderSide(color: AppTheme.tpRed, width: 2),
                                         ),
                                       ),
                                       validator: Validators.password,
@@ -365,13 +365,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                       ? AppTheme.tpRed
                                                       : Colors.transparent,
                                                 ),
-                                                side: const BorderSide(color: AppTheme.tpRed, width: 2),
+                                                side: BorderSide(color: AppTheme.tpRed, width: 2),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                               ),
                                             ),
-                                            const Text(
+                                            Text(
                                               'Remember Me?',
                                               style: TextStyle(
                                                   color: AppTheme.textSecondary, fontSize: 13),
@@ -381,7 +381,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         GestureDetector(
                                           onTap: widget.onGoToForgotPassword,
                                           // tapping switches to the forgot password screen
-                                          child: const Text(
+                                          child: Text(
                                             'Forgot Password?',
                                             style: TextStyle(
                                               color: AppTheme.tpRed,
@@ -436,7 +436,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               // divider between login and social sign in 
                               Row(
-                                children: const [
+                                children: [
                                   Expanded(child: Divider(color: AppTheme.darkBorder)),
                                   Padding(
                                     padding: EdgeInsets.symmetric(horizontal: 12),
@@ -454,7 +454,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 height: 48,
                                 child: OutlinedButton.icon(
                                   onPressed: _isLoading ? null : _signInWithGoogle,
-                                  icon: const Icon(Icons.g_mobiledata,
+                                  icon: Icon(Icons.g_mobiledata,
                                       color: AppTheme.tpRed, size: 28),
                                   label: const Text('Continue with Google'),
                                 ),
@@ -468,7 +468,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed:
                                       _isLoading ? null : _signInWithGitHub,
-                                  icon: const Icon(Icons.code,
+                                  icon: Icon(Icons.code,
                                       color: AppTheme.tpRed),
                                   label: const Text('Continue with GitHub'),
                                 ),

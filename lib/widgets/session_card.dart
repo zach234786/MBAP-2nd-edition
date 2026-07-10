@@ -71,7 +71,7 @@ class SessionCard extends StatelessWidget {
                 children: [
                   Text(
                     session.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -82,11 +82,11 @@ class SessionCard extends StatelessWidget {
                   RichText(
                     text: TextSpan(
                       text: 'with ',
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                       children: [
                         TextSpan(
                           text: session.mentorName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppTheme.tpRed,
                             fontWeight: FontWeight.w600,
                           ),
@@ -98,18 +98,18 @@ class SessionCard extends StatelessWidget {
                   // date and time row
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 11, color: AppTheme.textSecondary),
+                      Icon(Icons.calendar_today, size: 11, color: AppTheme.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         _formattedDate(),
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                       ),
                       const SizedBox(width: 10),
-                      const Icon(Icons.access_time, size: 11, color: AppTheme.textSecondary),
+                      Icon(Icons.access_time, size: 11, color: AppTheme.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         session.time,
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                       ),
                     ],
                   ),
@@ -126,7 +126,7 @@ class SessionCard extends StatelessWidget {
               ),
               child: Text(
                 session.status,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.tpRed,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,

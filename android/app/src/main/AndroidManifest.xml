@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- permission to show notifications (required on Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- lets scheduled session reminders survive a device restart -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- internet access for Firebase, Firestore and the Gemini AI API -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="tpmentorship"
         android:name="${applicationName}"

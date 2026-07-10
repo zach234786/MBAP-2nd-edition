@@ -89,7 +89,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: widget.onGoToLogin,
-                    child: const Icon(Icons.arrow_back,
+                    child: Icon(Icons.arrow_back,
                         color: AppTheme.textPrimary),
                   ),
                 ),
@@ -107,7 +107,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Forgot Password?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -117,7 +117,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Enter your email and we will send you a link to reset your password.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
@@ -127,9 +127,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 // valid email
                 TextFormField(
                   controller: _emailController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Email',
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.email, color: AppTheme.tpRed),
@@ -162,7 +162,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     // tapping this goes back to the login screen
                     child: Text(
                       widget.backLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.tpRed,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

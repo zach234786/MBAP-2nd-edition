@@ -73,7 +73,7 @@ class MessageTile extends StatelessWidget {
                     border: Border.all(color: AppTheme.tpRed, width: 2),
                     color: AppTheme.darkBg,
                   ),
-                  child: const Icon(Icons.person, color: AppTheme.textSecondary, size: 24),
+                  child: Icon(Icons.person, color: AppTheme.textSecondary, size: 24),
                 ),
                 Positioned(
                   bottom: 0,
@@ -99,7 +99,7 @@ class MessageTile extends StatelessWidget {
                 children: [
                   Text(
                     message.senderName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -111,7 +111,7 @@ class MessageTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     // cut off long messages with "..."
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -123,7 +123,7 @@ class MessageTile extends StatelessWidget {
               children: [
                 Text(
                   _formatTimestamp(message.timestamp),
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                 ),
                 if (message.unreadCount > 0) ...[
                   // only show the red bubble when there are unread messages
@@ -131,7 +131,7 @@ class MessageTile extends StatelessWidget {
                   Container(
                     width: 20,
                     height: 20,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppTheme.tpRed,
                     ),

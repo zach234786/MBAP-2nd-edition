@@ -95,7 +95,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: widget.onGoToLogin,
-                    child: const Icon(Icons.arrow_back,
+                    child: Icon(Icons.arrow_back,
                         color: AppTheme.textPrimary),
                   ),
                 ),
@@ -113,7 +113,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Create Account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -123,7 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Join the TP Mentorship community',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
@@ -133,8 +133,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // name field must not be empty
                 TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: AppTheme.textPrimary),
+                  decoration: InputDecoration(
                     labelText: 'Full Name',
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.person, color: AppTheme.tpRed),
@@ -152,9 +152,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // check if email field valid
                 TextFormField(
                   controller: _emailController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Email',
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.email, color: AppTheme.tpRed),
@@ -166,12 +166,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // password field with the eye icon to show/hide
                 TextFormField(
                   controller: _passwordController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                    prefixIcon: const Icon(Icons.lock, color: AppTheme.tpRed),
+                    labelStyle: TextStyle(color: AppTheme.textSecondary),
+                    prefixIcon: Icon(Icons.lock, color: AppTheme.tpRed),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -192,9 +192,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // confirm password field must match the password above
                 TextFormField(
                   controller: _confirmController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   obscureText: _obscurePassword,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     labelStyle: TextStyle(color: AppTheme.textSecondary),
                     prefixIcon: Icon(Icons.lock_outline, color: AppTheme.tpRed),
@@ -230,7 +230,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Already have an account? ',
                       style: TextStyle(
                           color: AppTheme.textSecondary, fontSize: 13),
@@ -238,7 +238,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     GestureDetector(
                       onTap: widget.onGoToLogin,
                       // tapping this switches back to the login screen
-                      child: const Text(
+                      child: Text(
                         'Login',
                         style: TextStyle(
                           color: AppTheme.tpRed,

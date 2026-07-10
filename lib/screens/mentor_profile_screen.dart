@@ -31,11 +31,11 @@ class MentorProfileScreen extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onBack,
-                  child: const Icon(Icons.arrow_back_ios,
+                  child: Icon(Icons.arrow_back_ios,
                       color: AppTheme.textPrimary, size: 20),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'My Mentor Profile',
                   style: TextStyle(
                     color: AppTheme.textPrimary,
@@ -71,7 +71,7 @@ class MentorProfileScreen extends StatelessWidget {
                         border: Border.all(color: AppTheme.tpRed, width: 3),
                         color: AppTheme.darkBg,
                       ),
-                      child: const Icon(Icons.person,
+                      child: Icon(Icons.person,
                           color: AppTheme.textSecondary, size: 40),
                     ),
                     Positioned(
@@ -97,14 +97,14 @@ class MentorProfileScreen extends StatelessWidget {
                     children: [
                       Text(
                         userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
-                      const Text(
+                      Text(
                         'Coding Mentor',
                         style: TextStyle(
                             color: AppTheme.textSecondary, fontSize: 12),
@@ -114,7 +114,7 @@ class MentorProfileScreen extends StatelessWidget {
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 14),
                           const SizedBox(width: 4),
-                          const Text(
+                          Text(
                             '4.9',
                             style: TextStyle(
                               color: AppTheme.textPrimary,
@@ -123,7 +123,7 @@ class MentorProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Text(
+                          Text(
                             '(86 Reviews)',
                             style: TextStyle(
                                 color: AppTheme.textSecondary, fontSize: 11),
@@ -138,7 +138,7 @@ class MentorProfileScreen extends StatelessWidget {
                               border: Border.all(
                                   color: AppTheme.tpRed.withValues(alpha: 0.4)),
                             ),
-                            child: const Text(
+                            child: Text(
                               '107 Sessions',
                               style: TextStyle(
                                 color: AppTheme.tpRed,
@@ -165,7 +165,7 @@ class MentorProfileScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Specialisations',
                       style: TextStyle(
                         color: AppTheme.textPrimary,
@@ -179,7 +179,7 @@ class MentorProfileScreen extends StatelessWidget {
                         color: AppTheme.tpRed.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(Icons.edit, color: AppTheme.tpRed, size: 14),
+                      child: Icon(Icons.edit, color: AppTheme.tpRed, size: 14),
                     ),
                   ],
                 ),
@@ -198,7 +198,7 @@ class MentorProfileScreen extends StatelessWidget {
                             ),
                             child: Text(
                               tag,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppTheme.tpRed,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -217,7 +217,7 @@ class MentorProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'About Me',
                   style: TextStyle(
@@ -246,7 +246,7 @@ class MentorProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Availability',
                   style: TextStyle(
                     color: AppTheme.textPrimary,
@@ -266,9 +266,9 @@ class MentorProfileScreen extends StatelessWidget {
                     children: [
                       // one row per available day, divided by lines
                       _availabilityRow('Monday', '2PM - 6PM'),
-                      const Divider(color: AppTheme.darkBorder, height: 1),
+                      Divider(color: AppTheme.darkBorder, height: 1),
                       _availabilityRow('Tuesday', '9AM - 12PM'),
-                      const Divider(color: AppTheme.darkBorder, height: 1),
+                      Divider(color: AppTheme.darkBorder, height: 1),
                       _availabilityRow('Friday', '1PM - 8PM'),
                     ],
                   ),
@@ -286,7 +286,7 @@ class MentorProfileScreen extends StatelessWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       'Student Reviews',
                       style: TextStyle(
@@ -330,7 +330,7 @@ class MentorProfileScreen extends StatelessWidget {
                                       Border.all(color: AppTheme.tpRed, width: 2),
                                   color: AppTheme.darkBg,
                                 ),
-                                child: const Icon(Icons.person,
+                                child: Icon(Icons.person,
                                     color: AppTheme.textSecondary, size: 20),
                               ),
                               const SizedBox(width: 10),
@@ -340,7 +340,7 @@ class MentorProfileScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       review['name']!,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppTheme.textPrimary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -348,7 +348,7 @@ class MentorProfileScreen extends StatelessWidget {
                                     ),
                                     Text(
                                       review['subject']!,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           color: AppTheme.textSecondary, fontSize: 11),
                                     ),
                                   ],
@@ -356,7 +356,7 @@ class MentorProfileScreen extends StatelessWidget {
                               ),
                               Text(
                                 review['timeAgo']!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppTheme.textSecondary, fontSize: 11),
                               ),
                             ],
@@ -374,7 +374,7 @@ class MentorProfileScreen extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 review['rating']!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -386,7 +386,7 @@ class MentorProfileScreen extends StatelessWidget {
                           // the review text
                           Text(
                             review['review']!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 12,
                               height: 1.4,
@@ -410,11 +410,11 @@ class MentorProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.access_time, color: AppTheme.tpRed, size: 16),
+          Icon(Icons.access_time, color: AppTheme.tpRed, size: 16),
           const SizedBox(width: 10),
           Text(
             day,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -424,7 +424,7 @@ class MentorProfileScreen extends StatelessWidget {
           // pushes the time to the far right
           Text(
             time,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.tpRed,
               fontSize: 13,
               fontWeight: FontWeight.w600,

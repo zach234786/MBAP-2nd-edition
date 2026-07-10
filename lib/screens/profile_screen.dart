@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 // built in ui widgets
-import 'package:tpmentorship/data/sample_data.dart';
-// fake sample data used to fill the screen
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// riverpod state management
+import 'package:tpmentorship/models/session.dart';
+// the session data type
+import 'package:tpmentorship/providers/data_providers.dart';
+// live firestore providers
 import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
 import 'package:tpmentorship/widgets/session_card.dart';
 // the session card widget
 
-class ProfileScreen extends StatelessWidget {
-// users own profile page
+class ProfileScreen extends ConsumerWidget {
+// users own profile page - now fed by the live firestore profile
+// also shows the completed-sessions count from the aggregation query
   final String userName;
-  // the users name, shown at the top
+  // fallback name if the firestore profile hasnt loaded yet
 
   // functions passed in from the parent to handle button taps
   final VoidCallback? onEditProfile;
   final VoidCallback? onSettings;
   final VoidCallback? onLogout;
+  final ValueChanged<Session>? onSessionTap;
   final VoidCallback? onSeeMore;
+  final VoidCallback? onGoPremium;
   final VoidCallback? onBack;
 
   const ProfileScreen({
@@ -25,14 +32,41 @@ class ProfileScreen extends StatelessWidget {
     this.onEditProfile,
     this.onSettings,
     this.onLogout,
+    this.onSessionTap,
     this.onSeeMore,
+    this.onGoPremium,
     this.onBack,
   });
 
+  // turns a date into a string like "17 May 2026"
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final sessions = SampleData.getUpcomingSessions();
-    // the sessions to list further down
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileProvider).value;
+    // the live firestore profile (null until it loads / gets created)
+    final sessionsAsync = ref.watch(mySessionsProvider);
+    // this student's sessions, live
+    final completedCount = ref.watch(completedSessionsCountProvider).value;
+    // how many sessions completed - from the firestore count() aggregation
+
+    // use profile values when loaded, sensible fallbacks when not
+    final displayName =
+        (profile?.fullName.isNotEmpty ?? false) ? profile!.fullName : userName;
+    final courseLine = profile == null || profile.course.isEmpty
+        ? 'Set your course in Edit Profile'
+        : '${profile.course}'
+            '${profile.academicYear.isEmpty ? '' : ' (${profile.academicYear})'}';
+    final bio = profile == null || profile.bio.isEmpty
+        ? 'Tell mentors about yourself in Edit Profile '
+        : '${profile.bio} ';
+    final isPremium = profile?.isPremium ?? false;
 
     return SingleChildScrollView(
     // whole screen scrolls
@@ -46,11 +80,11 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onBack,
-                  child: const Icon(Icons.arrow_back_ios,
+                  child: Icon(Icons.arrow_back_ios,
                       color: AppTheme.textPrimary, size: 20),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Profile',
                   style: TextStyle(
                     color: AppTheme.textPrimary,
@@ -58,12 +92,18 @@ class ProfileScreen extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+                if (isPremium) ...[
+                  // premium badge unlocked by the NETS QR payment
+                  const SizedBox(width: 8),
+                  const Icon(Icons.workspace_premium,
+                      color: Colors.amber, size: 22),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // main profile card 
+          // main profile card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -77,7 +117,7 @@ class ProfileScreen extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // profile picture 
+                    // profile picture
                     Stack(
                       children: [
                         Container(
@@ -88,7 +128,7 @@ class ProfileScreen extends StatelessWidget {
                             border: Border.all(color: AppTheme.tpRed, width: 3),
                             color: AppTheme.darkBg,
                           ),
-                          child: const Icon(Icons.person,
+                          child: Icon(Icons.person,
                               color: AppTheme.textSecondary, size: 36),
                         ),
                         Positioned(
@@ -113,30 +153,30 @@ class ProfileScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            userName,
-                            style: const TextStyle(
+                            displayName,
+                            style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            'Diploma in AAI (Year 2)',
+                          Text(
+                            courseLine,
                             style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                           ),
                           const SizedBox(height: 6),
                           RichText(
                             text: TextSpan(
-                              text: 'I like AAI, I am pretty good at Coding, and am excited to connect! ',
-                              style: const TextStyle(
+                              text: bio,
+                              style: TextStyle(
                                   color: AppTheme.textSecondary, fontSize: 11, height: 1.4),
                               children: [
                                 WidgetSpan(
                                   child: GestureDetector(
                                     onTap: onEditProfile,
-                                    child: const Text(
-                                      '...Read More',
+                                    child: Text(
+                                      '...Edit',
                                       style: TextStyle(
                                         color: AppTheme.tpRed,
                                         fontSize: 11,
@@ -167,16 +207,19 @@ class ProfileScreen extends StatelessWidget {
                           border: Border.all(color: AppTheme.darkBorder),
                         ),
                         child: Row(
-                          children: const [
+                          children: [
                             Icon(Icons.calendar_today, color: AppTheme.tpRed, size: 16),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Created At:',
                                     style: TextStyle(
                                         color: AppTheme.textSecondary, fontSize: 10)),
-                                Text('17 May 2026',
+                                Text(
+                                    profile == null
+                                        ? '-'
+                                        : _formatDate(profile.createdAt),
                                     style: TextStyle(
                                       color: AppTheme.textPrimary,
                                       fontWeight: FontWeight.w700,
@@ -198,16 +241,20 @@ class ProfileScreen extends StatelessWidget {
                           border: Border.all(color: AppTheme.darkBorder),
                         ),
                         child: Row(
-                          children: const [
+                          children: [
                             Icon(Icons.badge, color: AppTheme.tpRed, size: 16),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Student ID:',
                                     style: TextStyle(
                                         color: AppTheme.textSecondary, fontSize: 10)),
-                                Text('2501587F',
+                                Text(
+                                    profile == null ||
+                                            profile.studentId.isEmpty
+                                        ? '-'
+                                        : profile.studentId,
                                     style: TextStyle(
                                       color: AppTheme.textPrimary,
                                       fontWeight: FontWeight.w700,
@@ -256,36 +303,59 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // sessions section with a filter link
+          // sessions section with the completed count and a view all link
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Sessions',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Sessions',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // count from the firestore count() aggregation query
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.tpRed.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: AppTheme.tpRed.withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        '${completedCount ?? 0} completed',
+                        style: TextStyle(
+                          color: AppTheme.tpRed,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: onSeeMore,
+                  // opens the full sessions list with its filters
                   child: Row(
-                    children: const [
-                      Icon(Icons.filter_list, color: AppTheme.tpRed, size: 14),
-                      SizedBox(width: 4),
+                    children: [
                       Text(
-                        'Filter by: Pending',
+                        'View all',
                         style: TextStyle(
                           color: AppTheme.tpRed,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(width: 2),
-                      Icon(Icons.keyboard_arrow_down,
+                      const SizedBox(width: 2),
+                      Icon(Icons.chevron_right,
                           color: AppTheme.tpRed, size: 16),
                     ],
                   ),
@@ -296,14 +366,35 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: sessions
-                  .map((s) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: SessionCard(session: s),
-                      ))
-                  .toList(),
-                  // one session card per session
+            child: sessionsAsync.when(
+              // live sessions from firestore
+              data: (sessions) {
+                final preview = sessions.take(2).toList();
+                if (preview.isEmpty) {
+                  return Text(
+                    'No sessions yet - book one from a mentor profile!',
+                    style: TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 12),
+                  );
+                }
+                return Column(
+                  children: preview
+                      .map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SessionCard(
+                                session: s,
+                                onTap: () => onSessionTap?.call(s)),
+                          ))
+                      .toList(),
+                      // one session card per session
+                );
+              },
+              loading: () => Center(
+                  child: CircularProgressIndicator(color: AppTheme.tpRed)),
+              error: (e, _) => Text(
+                'Could not load sessions',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -326,7 +417,7 @@ class ProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
+                        children: [
                           Text(
                             'TPMentorship',
                             style: TextStyle(
@@ -335,8 +426,8 @@ class ProfileScreen extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          SizedBox(width: 6),
-                          Icon(Icons.workspace_premium, color: Colors.amber, size: 18),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.workspace_premium, color: Colors.amber, size: 18),
                         ],
                       ),
                       const SizedBox(height: 10),
@@ -347,100 +438,123 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // right side got price and a see more link
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      '\$2.99',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                // right side: price and upgrade link, or the active badge
+                isPremium
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: const [
+                          Icon(Icons.check_circle,
+                              color: Colors.green, size: 22),
+                          SizedBox(height: 4),
+                          Text(
+                            'ACTIVE',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '\$2.99',
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            '/mo',
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: onGoPremium,
+                            // opens the NETS QR payment screen
+                            child: Text(
+                              'Upgrade >',
+                              style: TextStyle(
+                                color: AppTheme.tpRed,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Text(
-                      '/mo',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: onSeeMore,
-                      child: const Text(
-                        'See More >',
-                        style: TextStyle(
-                          color: AppTheme.tpRed,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
           const SizedBox(height: 12),
 
-          // payment method card (NETS QR)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppTheme.darkCardBg,
-              border: Border.all(color: AppTheme.darkBorder),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                // NETS logo box
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'NETS',
-                      style: TextStyle(
-                        color: Color(0xFF003087),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+          // payment method card (NETS QR) - opens the premium screen
+          GestureDetector(
+            onTap: isPremium ? null : onGoPremium,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.darkCardBg,
+                border: Border.all(color: AppTheme.darkBorder),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  // NETS logo box
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'NETS',
+                        style: TextStyle(
+                          color: Color(0xFF003087),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // payment details text
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Payment via NETS QR Code',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                  const SizedBox(width: 12),
+                  // payment details text
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isPremium
+                              ? 'Premium active - paid via NETS QR'
+                              : 'Payment via NETS QR Code',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Cancel Anytime in your Settings',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-                      ),
-                      Text(
-                        'First time Purchase, +3 Months free!',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Cancel Anytime in your Settings',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        ),
+                        Text(
+                          'First time Purchase, +3 Months free!',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-              ],
+                  Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -454,11 +568,11 @@ class ProfileScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('• ', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+        Text('• ', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
         ),
       ],
@@ -467,7 +581,7 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileActionButton extends StatelessWidget {
-// small icon and label button used in the profile card 
+// small icon and label button used in the profile card
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
@@ -499,7 +613,7 @@ class _ProfileActionButton extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.tpRed,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,

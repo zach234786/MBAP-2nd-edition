@@ -42,11 +42,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 children: [
                   GestureDetector(
                     onTap: widget.onBack,
-                    child: const Icon(Icons.arrow_back_ios,
+                    child: Icon(Icons.arrow_back_ios,
                         color: AppTheme.textPrimary, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Messages',
                     style: TextStyle(
                       color: AppTheme.textPrimary,
@@ -57,7 +57,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Chat with your mentors, students and ask questions!',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
@@ -71,25 +71,25 @@ class _MessagesScreenState extends State<MessagesScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               hintText: 'Search for Mentors/students to connect with....',
-              hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-              prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
+              hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              prefixIcon: Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
               fillColor: AppTheme.darkCardBg,
               filled: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.darkBorder),
+                borderSide: BorderSide(color: AppTheme.darkBorder),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.darkBorder),
+                borderSide: BorderSide(color: AppTheme.darkBorder),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.tpRed, width: 2),
+                borderSide: BorderSide(color: AppTheme.tpRed, width: 2),
               ),
             ),
           ),
@@ -117,7 +117,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           border: Border.all(color: AppTheme.tpRed, width: 2),
                           color: AppTheme.darkBg,
                         ),
-                        child: const Icon(Icons.person,
+                        child: Icon(Icons.person,
                             color: AppTheme.textSecondary, size: 28),
                       ),
                       Positioned(
@@ -145,7 +145,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w500,
                         fontSize: 11,
@@ -159,7 +159,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
 
         // msgs section label
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Align(
             alignment: Alignment.centerLeft,

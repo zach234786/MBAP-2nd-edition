@@ -102,14 +102,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back,
+                    child: Icon(Icons.arrow_back,
                         color: AppTheme.textPrimary),
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // title and subtitle
-                const Text(
+                Text(
                   'Change Password',
                   style: TextStyle(
                     color: AppTheme.textPrimary,
@@ -118,7 +118,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Enter your current password and choose a new one.',
                   style: TextStyle(
                     color: AppTheme.textSecondary,
@@ -130,14 +130,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 // current password field with its own eye toggle
                 TextFormField(
                   controller: _oldPasswordController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   obscureText: _obscureOldPassword,
                   decoration: InputDecoration(
                     labelText: 'Current Password',
                     labelStyle:
-                        const TextStyle(color: AppTheme.textSecondary),
+                        TextStyle(color: AppTheme.textSecondary),
                     prefixIcon:
-                        const Icon(Icons.lock, color: AppTheme.tpRed),
+                        Icon(Icons.lock, color: AppTheme.tpRed),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureOldPassword
@@ -158,14 +158,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 // new password field, must be valid and different from the current one
                 TextFormField(
                   controller: _newPasswordController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   obscureText: _obscureNewPassword,
                   decoration: InputDecoration(
                     labelText: 'New Password',
                     labelStyle:
-                        const TextStyle(color: AppTheme.textSecondary),
+                        TextStyle(color: AppTheme.textSecondary),
                     prefixIcon:
-                        const Icon(Icons.lock_outline, color: AppTheme.tpRed),
+                        Icon(Icons.lock_outline, color: AppTheme.tpRed),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureNewPassword
@@ -195,14 +195,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 // confirm password field must match the new password above
                 TextFormField(
                   controller: _confirmPasswordController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     labelStyle:
-                        const TextStyle(color: AppTheme.textSecondary),
+                        TextStyle(color: AppTheme.textSecondary),
                     prefixIcon:
-                        const Icon(Icons.lock_outline, color: AppTheme.tpRed),
+                        Icon(Icons.lock_outline, color: AppTheme.tpRed),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
@@ -250,7 +250,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   child: GestureDetector(
                     onTap: widget.onForgotPassword,
                     // tapping this switches to the forgot password screen
-                    child: const Text(
+                    child: Text(
                       'Forgot Password?',
                       style: TextStyle(
                         color: AppTheme.tpRed,

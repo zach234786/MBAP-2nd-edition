@@ -45,7 +45,7 @@ class MentorCard extends StatelessWidget {
                     border: Border.all(color: AppTheme.tpRed, width: 3),
                     color: AppTheme.darkBg,
                   ),
-                  child: const Icon(Icons.person, color: AppTheme.textSecondary, size: 28),
+                  child: Icon(Icons.person, color: AppTheme.textSecondary, size: 28),
                 ),
                 Positioned(
                   bottom: 0,
@@ -70,7 +70,7 @@ class MentorCard extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
@@ -83,7 +83,7 @@ class MentorCard extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 10,
               ),
@@ -98,7 +98,7 @@ class MentorCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '${mentor.rating}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
@@ -106,7 +106,7 @@ class MentorCard extends StatelessWidget {
                 ),
                 Text(
                   ' (${mentor.reviewCount})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 10,
                   ),

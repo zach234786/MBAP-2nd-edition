@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 // built in ui widgets
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// riverpod state management
 import 'package:tpmentorship/data/sample_data.dart';
-// fake sample data used to fill the screen
+// sample data still used for the messages preview only
 import 'package:tpmentorship/models/mentor.dart';
-// the mentor data type
+import 'package:tpmentorship/models/session.dart';
+// the data types
+import 'package:tpmentorship/providers/ai_provider.dart';
+import 'package:tpmentorship/providers/data_providers.dart';
+// live firestore + AI providers
 import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
 import 'package:tpmentorship/widgets/mentor_card.dart';
@@ -11,15 +17,17 @@ import 'package:tpmentorship/widgets/mentor_card.dart';
 import 'package:tpmentorship/widgets/session_card.dart';
 // the session card widget
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
 // the main landing screen after logging in
+// ConsumerWidget so it can watch the live firestore providers
   final String userName;
   // the logged in username shown in greeting
 
   // used to handle taps and navigation
   final ValueChanged<Mentor>? onMentorTap;
-  final VoidCallback? onSessionTap;
+  final ValueChanged<Session>? onSessionTap;
   final VoidCallback? onViewAllSessions;
+  final VoidCallback? onViewAllAiMatches;
   final VoidCallback? onViewAllMessages;
   final VoidCallback? onNavigateToSearch;
   final VoidCallback? onNavigateToMessages;
@@ -30,16 +38,19 @@ class HomeScreen extends StatelessWidget {
     this.onMentorTap,
     this.onSessionTap,
     this.onViewAllSessions,
+    this.onViewAllAiMatches,
     this.onViewAllMessages,
     this.onNavigateToSearch,
     this.onNavigateToMessages,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // grab the sample data to display
-    final mentors = SampleData.getMentors();
-    final sessions = SampleData.getUpcomingSessions();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // AI-ranked mentor recommendations (the applied AI feature)
+    final matchesAsync = ref.watch(mentorMatchesProvider);
+    // this student's booked sessions, live from firestore
+    final sessionsAsync = ref.watch(mySessionsProvider);
+    // messages stay as sample data (messaging is not the CRUD domain)
     final messages = SampleData.getMessages();
 
     return SingleChildScrollView(
@@ -60,7 +71,7 @@ class HomeScreen extends StatelessWidget {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           colors: [AppTheme.tpRedLight, AppTheme.tpRed],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -98,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     // TP Mentorship title
                     RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
                           TextSpan(
                             text: 'TP ',
@@ -133,7 +144,7 @@ class HomeScreen extends StatelessWidget {
             child: RichText(
               text: TextSpan(
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text: 'Hello ',
                     style: TextStyle(
                       color: AppTheme.textPrimary,
@@ -143,7 +154,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   TextSpan(
                     text: userName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.tpRed,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -153,36 +164,59 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             child: Text(
               'Connect. Learn. Grow Together',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
             ),
           ),
 
-          // recommended mentors scrolls sideways
-          _sectionHeader('Recommended Mentors', 'View all >', onNavigateToSearch),
+          // recommended mentors, ranked by the AI, scrolls sideways
+          _sectionHeader('Recommended Mentors', 'View all >', onViewAllAiMatches,
+              aiBadge: true),
           const SizedBox(height: 12),
           SizedBox(
             height: 150,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: mentors.length,
-              itemBuilder: (context, index) {
-                // build one mentor card per mentor
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: SizedBox(
-                    width: 100,
-                    child: MentorCard(
-                      mentor: mentors[index],
-                      onTap: () => onMentorTap?.call(mentors[index]),
+            child: matchesAsync.when(
+              // the AI ranking gives us loading / error / data states
+              data: (matches) {
+                if (matches.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No mentors yet - check back soon!',
+                      style: TextStyle(color: AppTheme.textSecondary),
                     ),
-                  ),
+                  );
+                }
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: matches.length > 5 ? 5 : matches.length,
+                  // only the top 5 matches on the home screen
+                  itemBuilder: (context, index) {
+                    final match = matches[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: SizedBox(
+                        width: 100,
+                        child: MentorCard(
+                          mentor: match.mentor,
+                          onTap: () => onMentorTap?.call(match.mentor),
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
+              loading: () => Center(
+                  child: CircularProgressIndicator(color: AppTheme.tpRed)),
+              error: (e, _) => Center(
+                child: Text(
+                  'Could not load mentors',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -213,21 +247,64 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // upcoming sessions list
+          // upcoming sessions list, live from firestore
           _sectionHeader('Upcoming Sessions', 'View all >', onViewAllSessions),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: sessions
-                  .map((s) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: SessionCard(session: s, onTap: onSessionTap),
-                      ))
-                  .toList(),
-                  // one session card per session
+            child: sessionsAsync.when(
+              data: (sessions) {
+                // only sessions that havent happened yet, next 2
+                final upcoming = sessions
+                    .where((s) => s.date.isAfter(DateTime.now()))
+                    .take(2)
+                    .toList();
+                if (upcoming.isEmpty) {
+                  // friendly empty state instead of a blank gap
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkCardBg,
+                      border: Border.all(color: AppTheme.darkBorder),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.event_available,
+                            color: AppTheme.textSecondary, size: 28),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No upcoming sessions - find a mentor and book one!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return Column(
+                  children: upcoming
+                      .map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SessionCard(
+                                session: s,
+                                onTap: () => onSessionTap?.call(s)),
+                          ))
+                      .toList(),
+                      // one session card per session
+                );
+              },
+              loading: () => Center(
+                  child: CircularProgressIndicator(color: AppTheme.tpRed)),
+              error: (e, _) => Text(
+                'Could not load sessions',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
             ),
           ),
+          const SizedBox(height: 8),
 
           // messages preview
           _sectionHeader('Messages', 'View all >', onNavigateToMessages),
@@ -246,7 +323,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // profile picture 
+                        // profile picture
                         Stack(
                           children: [
                             Container(
@@ -257,7 +334,7 @@ class HomeScreen extends StatelessWidget {
                                 border: Border.all(color: AppTheme.tpRed, width: 2),
                                 color: AppTheme.darkBg,
                               ),
-                              child: const Icon(Icons.person,
+                              child: Icon(Icons.person,
                                   color: AppTheme.textSecondary, size: 20),
                             ),
                             Positioned(
@@ -286,7 +363,7 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Text(
                                 message.senderName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
@@ -297,7 +374,7 @@ class HomeScreen extends StatelessWidget {
                                 message.content,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppTheme.textSecondary, fontSize: 11),
                               ),
                             ],
@@ -308,7 +385,7 @@ class HomeScreen extends StatelessWidget {
                           Container(
                             width: 20,
                             height: 20,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: AppTheme.tpRed,
                             ),
@@ -334,25 +411,59 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionHeader(String title, String action, VoidCallback? onTap) {
+  Widget _sectionHeader(String title, String action, VoidCallback? onTap,
+      {bool aiBadge = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (aiBadge) ...[
+                // small badge showing this section is AI powered
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.tpRed.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: AppTheme.tpRed.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome,
+                          color: AppTheme.tpRed, size: 10),
+                      const SizedBox(width: 3),
+                      Text(
+                        'AI',
+                        style: TextStyle(
+                          color: AppTheme.tpRed,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
           GestureDetector(
             onTap: onTap,
             child: Text(
               action,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.tpRed,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -413,7 +524,7 @@ class _QuickActionCard extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
@@ -424,12 +535,12 @@ class _QuickActionCard extends StatelessWidget {
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 16),
+            Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 16),
           ],
         ),
       ),
