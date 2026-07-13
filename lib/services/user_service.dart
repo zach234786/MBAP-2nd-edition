@@ -57,12 +57,37 @@ class UserService {
       'academicYear': academicYear,
       'bio': bio,
       'subjects': subjects,
+      // saving the profile at all - even editing again later - counts as
+      // onboarding being complete, so the first-time auto-prompt never
+      // reappears once the user has filled this form in once
+      'onboardingComplete': true,
     });
-    // only these fields change - isPremium and createdAt stay untouched
+    // isPremium and createdAt stay untouched
   }
 
   // marks the user as premium after the NETS QR payment completes
+  // also clears any earlier cancellation so re-subscribing shows as active
   Future<void> upgradeToPremium(String uid) {
-    return _users.doc(uid).update({'isPremium': true});
+    return _users.doc(uid).update({
+      'isPremium': true,
+      'premiumCancelled': false,
+      'premiumCancelledAt': null,
+    });
+  }
+
+  // cancels premium - this is a student project, not a real billing
+  // system, so there is no background job that flips isPremium off at
+  // the end of the month. instead we just remember when the user
+  // cancelled so the UI can show "active until end of <month>"
+  Future<void> cancelPremium(String uid) {
+    return _users.doc(uid).update({
+      'premiumCancelled': true,
+      'premiumCancelledAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  // updates the user's role - called once, when they sign up as a mentor
+  Future<void> setRole(String uid, String role) {
+    return _users.doc(uid).update({'role': role});
   }
 }

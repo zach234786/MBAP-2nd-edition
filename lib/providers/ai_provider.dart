@@ -20,11 +20,15 @@ final mentorMatchesProvider = FutureProvider<List<MentorMatch>>((ref) async {
   final mentors = await ref.watch(mentorsProvider.future);
   final profile = await ref.watch(userProfileProvider.future);
 
+  // a mentor's own listing shouldn't be recommended to themselves - the
+  // mentor doc id is always the owner's auth uid (see becomeMentor)
+  final otherMentors = mentors.where((m) => m.id != profile?.uid).toList();
+
   return ref.watch(aiMatchingServiceProvider).rankMentors(
         // if the profile hasnt been created yet use an empty one -
         // the ranking then simply leans on ratings instead of subjects
         profile: profile ??
             UserProfile(uid: '', fullName: '', createdAt: DateTime.now()),
-        mentors: mentors,
+        mentors: otherMentors,
       );
 });

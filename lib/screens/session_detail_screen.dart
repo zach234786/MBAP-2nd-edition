@@ -6,6 +6,8 @@ import 'package:tpmentorship/models/session.dart';
 // the session data type
 import 'package:tpmentorship/providers/data_providers.dart';
 // the app's firestore providers
+import 'package:tpmentorship/screens/leave_review_screen.dart';
+// prompts the student to rate the mentor after completing a session
 import 'package:tpmentorship/services/appointment_service.dart';
 // for friendly error messages
 import 'package:tpmentorship/services/notification_service.dart';
@@ -139,7 +141,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     }
   }
 
-  // UPDATE (status) - marks the session as completed
+  // UPDATE (status) - marks the session as completed, then asks the
+  // student to rate the mentor
   Future<void> _markCompleted() async {
     final updated = _session!.copyWith(status: 'Completed');
     try {
@@ -148,15 +151,27 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       setState(() => _session = updated);
       showAppSnackBar(context, 'Session marked as completed!',
           success: true);
+
+      // prompt for a review right away - Navigator.push (not pop) so
+      // coming back from the review screen returns here, now showing
+      // the completed state with no more cancel/reschedule buttons
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LeaveReviewScreen(session: updated),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       showAppSnackBar(context, AppointmentService.friendlyError(e));
     }
   }
 
-  // DELETE - cancels the session after an AlertDialog confirmation
+  // UPDATE (status) - cancels the session by changing its status rather
+  // than deleting it outright, so it still shows up under the "Cancelled"
+  // filter on My Sessions as part of the student's history
   Future<void> _cancelSession() async {
-    // confirm first because deleting cannot be undone (feedback: AlertDialog)
+    // confirm first since this affects a real booking (feedback: AlertDialog)
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -164,8 +179,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         title: Text('Cancel Session',
             style: TextStyle(color: AppTheme.textPrimary)),
         content: Text(
-          'Cancel "${_session!.title}" with ${_session!.mentorName}? '
-          'This cannot be undone.',
+          'Cancel "${_session!.title}" with ${_session!.mentorName}?',
           style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
@@ -186,18 +200,62 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     if (confirmed != true) return;
     // user changed their mind
 
+    final updated = _session!.copyWith(status: 'Cancelled');
     try {
-      await ref
-          .read(appointmentServiceProvider)
-          .cancelSession(_session!.id);
-      // DELETE from firestore
+      await ref.read(appointmentServiceProvider).updateSession(updated);
+      // UPDATE in firestore - the booking record is kept, just marked cancelled
 
       // remove the reminder notification for this session too
-      await NotificationService.instance
-          .cancelSessionReminder(_session!.id);
+      await NotificationService.instance.cancelSessionReminder(_session!.id);
 
       if (!mounted) return;
+      setState(() => _session = updated);
       showAppSnackBar(context, 'Session cancelled', success: true);
+    } catch (e) {
+      if (!mounted) return;
+      showAppSnackBar(context, AppointmentService.friendlyError(e));
+    }
+  }
+
+  // DELETE - permanently removes an already-cancelled session from
+  // Firestore. this is the real delete operation in the CRUD set; the
+  // everyday "Cancel Session" action above is an update, not a delete,
+  // so cancelled sessions still appear in the student's history until
+  // they choose to clear them out here
+  Future<void> _deletePermanently() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.darkCardBg,
+        title: Text('Delete Session',
+            style: TextStyle(color: AppTheme.textPrimary)),
+        content: Text(
+          'Permanently remove this cancelled session from your history? '
+          'This cannot be undone.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Keep it',
+                style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('Delete',
+                style: TextStyle(
+                    color: AppTheme.tpRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(appointmentServiceProvider).cancelSession(_session!.id);
+      // DELETE from firestore
+      if (!mounted) return;
+      showAppSnackBar(context, 'Session deleted', success: true);
       Navigator.pop(context);
       // leave the detail screen since the session is gone
     } catch (e) {
@@ -231,6 +289,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   Widget _buildDetails() {
     final session = _session!;
     final isCompleted = session.status == 'Completed';
+    final isCancelled = session.status == 'Cancelled';
+    // active sessions (Pending/Confirmed) can be rescheduled, completed or
+    // cancelled; completed sessions are locked history; cancelled sessions
+    // can only be permanently deleted from here
+    final isActive = !isCompleted && !isCancelled;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -299,8 +362,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           const SizedBox(height: 24),
 
           // ----- action buttons -----
-          // completed sessions are history - no more changes allowed
-          if (!isCompleted) ...[
+          // completed and cancelled sessions are history - only active
+          // (Pending/Confirmed) sessions can be rescheduled or completed
+          if (isActive) ...[
             ElevatedButton.icon(
               onPressed: _reschedule,
               icon: const Icon(Icons.edit_calendar, size: 18),
@@ -313,17 +377,29 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               label: const Text('Mark as Completed'),
             ),
             const SizedBox(height: 12),
-          ],
-          TextButton.icon(
-            onPressed: _cancelSession,
-            icon: Icon(Icons.delete_outline,
-                color: AppTheme.tpRed, size: 18),
-            label: Text(
-              'Cancel Session',
-              style: TextStyle(
-                  color: AppTheme.tpRed, fontWeight: FontWeight.w700),
+            TextButton.icon(
+              onPressed: _cancelSession,
+              icon: Icon(Icons.cancel_outlined,
+                  color: AppTheme.tpRed, size: 18),
+              label: Text(
+                'Cancel Session',
+                style: TextStyle(
+                    color: AppTheme.tpRed, fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
+          ],
+          // completed sessions are locked - no cancel/delete button at all
+          if (isCancelled)
+            TextButton.icon(
+              onPressed: _deletePermanently,
+              icon: Icon(Icons.delete_forever,
+                  color: AppTheme.tpRed, size: 18),
+              label: Text(
+                'Delete Permanently',
+                style: TextStyle(
+                    color: AppTheme.tpRed, fontWeight: FontWeight.w700),
+              ),
+            ),
         ],
       ),
     );

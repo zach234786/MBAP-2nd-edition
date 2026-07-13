@@ -4,14 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // riverpod state management
 import 'package:tpmentorship/models/mentor.dart';
 // the mentor data type
+import 'package:tpmentorship/providers/auth_provider.dart';
+// gives us the logged in user, to flag their own mentor card as "You"
 import 'package:tpmentorship/providers/data_providers.dart';
 // live firestore providers
 import 'package:tpmentorship/screens/mentor_list_screen.dart';
-// the filtered results screen
+import 'package:tpmentorship/screens/student_list_screen.dart';
+// the filtered results screens
 import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
 import 'package:tpmentorship/widgets/mentor_card.dart';
-// the small mentor card widget
+import 'package:tpmentorship/widgets/student_card.dart';
+// the small card widgets
 
 class SearchScreen extends ConsumerStatefulWidget {
 // screen for browsing and finding mentors - all data is live from
@@ -40,6 +44,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   // grabs whatever the user types into the search box
   String _query = '';
   // the current search text, updates as the user types
+  String _mode = 'mentor';
+  // 'mentor' (default, everyone can search for mentors) or 'student'
+  // (mentors browsing for mentees) - switched from the hamburger menu,
+  // which only appears for users who have signed up as a mentor
 
   // preset tags shown under "popular searches" - each is a subject code
   // tapping one runs the filter-by-subject firestore query
@@ -93,11 +101,74 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  // opens the menu letting a user with the Mentor role switch between
+  // browsing for mentors and browsing for students
+  void _openModeMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkCardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Looking for...'),
+              ),
+              ListTile(
+                leading: Icon(Icons.school, color: AppTheme.tpRed),
+                title: Text('A Mentor',
+                    style: TextStyle(color: AppTheme.textPrimary)),
+                trailing: _mode == 'mentor'
+                    ? Icon(Icons.check, color: AppTheme.tpRed)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _mode = 'mentor';
+                    _query = '';
+                    _searchController.clear();
+                  });
+                  Navigator.pop(sheetContext);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.people, color: AppTheme.tpRed),
+                title: Text('A Student to Mentor',
+                    style: TextStyle(color: AppTheme.textPrimary)),
+                trailing: _mode == 'student'
+                    ? Icon(Icons.check, color: AppTheme.tpRed)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _mode = 'student';
+                    _query = '';
+                    _searchController.clear();
+                  });
+                  Navigator.pop(sheetContext);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // the hamburger toggle only makes sense for users who can mentor -
+    // a student-only account never needs to browse for mentees
+    final isMentor = ref.watch(isMentorProvider);
+    final isStudentMode = _mode == 'student';
+
     return Column(
       children: [
-        // back arrow, title and subtitle
+        // back arrow, title, subtitle and the mentor/student toggle
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -111,19 +182,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         color: AppTheme.textPrimary, size: 20),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Search',
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
+                  Expanded(
+                    child: Text(
+                      'Search',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
+                  if (isMentor)
+                    // hamburger menu - only shown once the user has
+                    // signed up as a mentor (role includes "Mentor")
+                    GestureDetector(
+                      onTap: _openModeMenu,
+                      child: Icon(Icons.menu, color: AppTheme.tpRed, size: 24),
+                    ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
-                'Find Mentors, Topics and Availability slots',
+                isStudentMode
+                    ? 'Find students looking for mentoring help'
+                    : 'Find Mentors, Topics and Availability slots',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
               ),
             ],
@@ -131,7 +213,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         const SizedBox(height: 12),
 
-        // search box - filters the mentor list live as the user types
+        // search box - filters the mentor/student list live as the user types
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -140,7 +222,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             // rebuild with the new search text on every keystroke
             style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
-              hintText: 'Search mentors, specialisations or rating....',
+              hintText: isStudentMode
+                  ? 'Search students or subjects....'
+                  : 'Search mentors, specialisations or rating....',
               hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               prefixIcon: Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
               // an x button to clear the search quickly
@@ -176,10 +260,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
         // rest of the page scrolls
         Expanded(
-          child: _query.isNotEmpty
-              // typing something? show matching mentors instead of browse
-              ? _buildSearchResults()
-              : _buildBrowseSections(),
+          child: isStudentMode
+              ? (_query.isNotEmpty
+                  ? _buildStudentSearchResults()
+                  : _buildStudentBrowseSections())
+              : (_query.isNotEmpty
+                  // typing something? show matching mentors instead of browse
+                  ? _buildSearchResults()
+                  : _buildBrowseSections()),
         ),
       ],
     );
@@ -188,6 +276,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   // live search results - filters the all-mentors stream by the text
   Widget _buildSearchResults() {
     final mentorsAsync = ref.watch(mentorsProvider);
+    final myUid = ref.watch(authStateProvider).value?.uid;
+    // mentor doc ids are the owner's auth uid, so this tells us which
+    // result (if any) is the searching user's own mentor listing
     return mentorsAsync.when(
       data: (mentors) {
         final lower = _query.toLowerCase();
@@ -218,6 +309,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           itemBuilder: (context, index) {
             return MentorCard(
               mentor: results[index],
+              isSelf: results[index].id == myUid,
               onTap: () => widget.onMentorTap?.call(results[index]),
             );
           },
@@ -228,6 +320,197 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       error: (e, _) => Center(
         child: Text('Could not load mentors',
             style: TextStyle(color: AppTheme.textSecondary)),
+      ),
+    );
+  }
+
+  // live search results in student mode - filters the all-students stream
+  Widget _buildStudentSearchResults() {
+    final studentsAsync = ref.watch(studentsProvider);
+    return studentsAsync.when(
+      data: (students) {
+        final lower = _query.toLowerCase();
+        final results = students.where((s) {
+          return s.name.toLowerCase().contains(lower) ||
+              s.course.toLowerCase().contains(lower) ||
+              s.subjects.any((subj) => subj.toLowerCase().contains(lower));
+        }).toList();
+
+        if (results.isEmpty) {
+          return Center(
+            child: Text('No students match "$_query"',
+                style: TextStyle(color: AppTheme.textSecondary)),
+          );
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.72,
+          ),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final student = results[index];
+            return StudentCard(
+              student: student,
+              onTap: () => showStudentDetailSheet(context, student),
+            );
+          },
+        );
+      },
+      loading: () =>
+          Center(child: CircularProgressIndicator(color: AppTheme.tpRed)),
+      error: (e, _) => Center(
+        child: Text('Could not load students',
+            style: TextStyle(color: AppTheme.textSecondary)),
+      ),
+    );
+  }
+
+  // the browse-students sections shown when in student mode with an
+  // empty search box - reuses the same subject list as mentor browsing
+  // since a student's "needs help with" subjects use the same codes
+  Widget _buildStudentBrowseSections() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Browse By Subject',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _popularSearches
+                  .map((tag) => GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StudentListScreen(
+                                  title: '${tag.$2} Students',
+                                  subject: tag.$2),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppTheme.tpRed),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            tag.$1.isEmpty ? tag.$2 : '${tag.$1}  ${tag.$2}',
+                            style: TextStyle(
+                              color: AppTheme.tpRed,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'All Students',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const StudentListScreen(title: 'All Students')),
+                    );
+                  },
+                  child: Text(
+                    'View all',
+                    style: TextStyle(
+                        color: AppTheme.tpRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              height: 140,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final studentsAsync = ref.watch(studentsProvider);
+                  return studentsAsync.when(
+                    data: (students) {
+                      if (students.isEmpty) {
+                        return Center(
+                          child: Text('No students in the directory yet',
+                              style:
+                                  TextStyle(color: AppTheme.textSecondary)),
+                        );
+                      }
+                      return ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: students.length,
+                        itemBuilder: (context, index) {
+                          final student = students[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: SizedBox(
+                              width: 110,
+                              child: StudentCard(
+                                student: student,
+                                onTap: () =>
+                                    showStudentDetailSheet(context, student),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => Center(
+                        child:
+                            CircularProgressIndicator(color: AppTheme.tpRed)),
+                    error: (e, _) => Center(
+                      child: Text('Could not load students',
+                          style: TextStyle(color: AppTheme.textSecondary)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

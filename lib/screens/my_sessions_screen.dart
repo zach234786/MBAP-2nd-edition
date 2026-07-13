@@ -30,7 +30,13 @@ class _MySessionsScreenState extends ConsumerState<MySessionsScreen> {
   // which filter chip is selected
 
   // the choices shown as filter chips
-  static const _statuses = ['All', 'Pending', 'Confirmed', 'Completed'];
+  static const _statuses = [
+    'All',
+    'Pending',
+    'Confirmed',
+    'Completed',
+    'Cancelled',
+  ];
 
   @override
   Widget build(BuildContext context) {

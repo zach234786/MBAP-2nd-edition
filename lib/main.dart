@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // import flutter river
 import 'package:tpmentorship/firebase_options.dart';
 import 'package:tpmentorship/models/mentor.dart';
 import 'package:tpmentorship/models/session.dart';
+import 'package:tpmentorship/models/user_profile.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/providers/data_providers.dart';
 import 'package:tpmentorship/providers/theme_provider.dart';
@@ -194,7 +195,10 @@ class MainNavigator extends ConsumerStatefulWidget {
 class _MainNavigatorState extends ConsumerState<MainNavigator> {
   int _selectedIndex = 0;
   // tracks what screen to show in the main navigator (starts at home screen)
-  
+  bool _onboardingPromptShown = false;
+  // guards the first-time onboarding prompt below so it only ever
+  // fires once per app session, not every time the profile stream emits
+
   @override
   void initState() {
     // runs once when the widget is first created
@@ -204,14 +208,37 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
         // check is user has display name set, if not prompt user to set it
     _setUpFirestoreData();
     // make sure firestore has mentor data and this user has a profile
+
+    // watch the profile stream outside of build() using listenManual, so
+    // we can push a screen the moment we see a first-time user (one whose
+    // profile document exists but has never been filled in and saved)
+    ref.listenManual<AsyncValue<UserProfile?>>(userProfileProvider,
+        (previous, next) {
+      final profile = next.value;
+      if (profile == null ||
+          profile.onboardingComplete ||
+          _onboardingPromptShown) {
+        return;
+      }
+      _onboardingPromptShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => EditProfileScreen(profile: profile)),
+        );
+      });
+    });
   }
 
   // one-time firestore setup after login:
-  // 1. seed the mentors collection if its empty (first ever run)
+  // 1. seed the mentors and students collections if empty (first ever run)
   // 2. create this user's profile document if they dont have one
   Future<void> _setUpFirestoreData() async {
     try {
       await ref.read(mentorServiceProvider).seedMentorsIfEmpty();
+      await ref.read(studentServiceProvider).seedStudentsIfEmpty();
       final user = ref.read(authStateProvider).value;
       if (user != null) {
         await ref.read(userServiceProvider).createProfileIfMissing(
@@ -659,8 +686,6 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                     // go back home
                   ),
                   MentorProfileScreen(
-                    userName: _greetingName,
-                    // make sure profile name is same as greeting name
                     onBack: () => setState(() => _selectedIndex = 0),
                     // go back home
                   ),

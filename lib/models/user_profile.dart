@@ -17,6 +17,18 @@ class UserProfile {
   // subjects the student wants help with (the "student needs" from the proposal)
   // this is what the AI matching feature uses to recommend mentors
   final DateTime createdAt;
+  final String role;
+  // 'Student' by default, becomes 'Student & Mentor' after signing up
+  // as a mentor (see MentorService.becomeMentor)
+  final bool onboardingComplete;
+  // false until the user saves their profile for the first time - used to
+  // auto-prompt first time users to fill in their details after signup
+  final bool premiumCancelled;
+  final DateTime? premiumCancelledAt;
+  // when the user cancels premium we keep isPremium as-is (this is a
+  // student project, not a real billing system) but remember the
+  // cancellation so the profile screen can show "active until end of
+  // <month>" instead of the normal active badge
 
   UserProfile({
     required this.uid,
@@ -28,7 +40,16 @@ class UserProfile {
     this.isPremium = false,
     this.subjects = const [],
     required this.createdAt,
+    this.role = 'Student',
+    this.onboardingComplete = false,
+    this.premiumCancelled = false,
+    this.premiumCancelledAt,
   });
+
+  bool get isMentor => role.contains('Mentor');
+  // true once the user has signed up as a mentor (role becomes
+  // 'Student & Mentor') - used to gate mentor-only UI like the
+  // search screen's browse-students toggle
 
   // builds a UserProfile from a Firestore document
   factory UserProfile.fromMap(Map<String, dynamic> data, String uid) {
@@ -44,6 +65,12 @@ class UserProfile {
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      role: (data['role'] ?? 'Student') as String,
+      onboardingComplete: (data['onboardingComplete'] ?? false) as bool,
+      premiumCancelled: (data['premiumCancelled'] ?? false) as bool,
+      premiumCancelledAt: data['premiumCancelledAt'] is Timestamp
+          ? (data['premiumCancelledAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -58,6 +85,12 @@ class UserProfile {
       'isPremium': isPremium,
       'subjects': subjects,
       'createdAt': Timestamp.fromDate(createdAt),
+      'role': role,
+      'onboardingComplete': onboardingComplete,
+      'premiumCancelled': premiumCancelled,
+      'premiumCancelledAt': premiumCancelledAt == null
+          ? null
+          : Timestamp.fromDate(premiumCancelledAt!),
     };
   }
 }

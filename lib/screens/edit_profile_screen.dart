@@ -11,6 +11,8 @@ import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
 import 'package:tpmentorship/utils/snackbar_helper.dart';
 // helper to show popup messages
+import 'package:tpmentorship/widgets/subject_picker.dart';
+// the subject chips + "More..." custom subject input
 
 class EditProfileScreen extends ConsumerStatefulWidget {
 // a validated form for editing the user's Firestore profile
@@ -42,8 +44,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _saving = false;
   // true while saving, shows the button spinner
 
-  // the subjects students can pick from (same codes the mentors teach)
-  static const _allSubjects = ['DAVA', 'LOMA', 'COMT', 'ECOMM', 'GSOST'];
   static const _years = ['Year 1', 'Year 2', 'Year 3'];
 
   @override
@@ -78,15 +78,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _saving = true);
     try {
+      final fullName = _nameController.text.trim();
+      final course = _courseController.text.trim();
+      final bio = _bioController.text.trim();
       await ref.read(userServiceProvider).updateProfile(
             uid: widget.profile.uid,
-            fullName: _nameController.text.trim(),
+            fullName: fullName,
             studentId: _studentIdController.text.trim().toUpperCase(),
-            course: _courseController.text.trim(),
+            course: course,
             academicYear: _academicYear ?? '',
-            bio: _bioController.text.trim(),
+            bio: bio,
             subjects: _selectedSubjects,
           );
+
+      // keep the "browse students" directory in sync too, so mentors
+      // looking for mentees can find real registered students (not just
+      // the seed data) - see StudentService.publishToDirectory
+      if (_selectedSubjects.isNotEmpty) {
+        await ref.read(studentServiceProvider).publishToDirectory(
+              uid: widget.profile.uid,
+              name: fullName,
+              course: course,
+              academicYear: _academicYear ?? '',
+              subjects: _selectedSubjects,
+              bio: bio,
+            );
+      } else {
+        // no subjects set - nothing to browse them for
+        await ref.read(studentServiceProvider).removeFromDirectory(widget.profile.uid);
+      }
 
       // keep the auth display name in sync so the greeting matches
       final newName = _nameController.text.trim();
@@ -119,6 +139,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ----- role (read only - changes automatically when you
+                // sign up as a mentor from the Mentor Profile tab) -----
+                _label('Role'),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.tpRed.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: AppTheme.tpRed.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    widget.profile.role,
+                    style: TextStyle(
+                      color: AppTheme.tpRed,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 // ----- full name -----
                 _label('Full Name'),
                 TextFormField(
@@ -222,40 +265,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       color: AppTheme.textSecondary, fontSize: 11),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _allSubjects.map((subject) {
-                    final selected = _selectedSubjects.contains(subject);
-                    return FilterChip(
-                      label: Text(subject),
-                      selected: selected,
-                      onSelected: (picked) {
-                        setState(() {
-                          // add or remove the subject from the list
-                          if (picked) {
-                            _selectedSubjects.add(subject);
-                          } else {
-                            _selectedSubjects.remove(subject);
-                          }
-                        });
-                      },
-                      selectedColor: AppTheme.tpRed,
-                      backgroundColor: AppTheme.darkCardBg,
-                      checkmarkColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: selected
-                            ? Colors.white
-                            : AppTheme.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      side: BorderSide(
-                          color: selected
-                              ? AppTheme.tpRed
-                              : AppTheme.darkBorder),
-                    );
-                  }).toList(),
+                SubjectPicker(
+                  selected: _selectedSubjects,
+                  onChanged: (subjects) =>
+                      setState(() => _selectedSubjects = subjects),
                 ),
                 const SizedBox(height: 24),
 

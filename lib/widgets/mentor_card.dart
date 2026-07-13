@@ -11,11 +11,15 @@ class MentorCard extends StatelessWidget {
   // the mentor to show on this card
   final VoidCallback? onTap;
   // what to run when the card is tapped
+  final bool isSelf;
+  // true when this card is the logged in user's own mentor listing -
+  // shows a "You" badge so search results are clear it's their own profile
 
   const MentorCard({
     super.key,
     required this.mentor,
     this.onTap,
+    this.isSelf = false,
   });
 
   @override
@@ -23,7 +27,41 @@ class MentorCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       // makes the whole card tappable
-      child: Container(
+      child: Stack(
+        // expand (not the Stack default of loose) so the card still fills
+        // and centers within its slot exactly like before the "You" badge
+        // was added - loose sizing made it shrink to content and top-align
+        fit: StackFit.expand,
+        children: [
+          _card(),
+          if (isSelf)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.tpRed,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'You',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _card() {
+    return Container(
         decoration: BoxDecoration(
           border: Border.all(color: AppTheme.tpRed, width: 2),
           borderRadius: BorderRadius.circular(16),
@@ -115,7 +153,6 @@ class MentorCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

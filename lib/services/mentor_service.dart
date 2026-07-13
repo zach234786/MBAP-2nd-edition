@@ -61,6 +61,73 @@ class MentorService {
     return Mentor.fromMap(doc.data()!, doc.id);
   }
 
+  // SELECT ONE, live - streams a single mentor by id so the UI updates
+  // instantly after an edit (used for "my mentor profile")
+  Stream<Mentor?> streamMentor(String id) {
+    return _mentors.doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return Mentor.fromMap(doc.data()!, doc.id);
+    });
+  }
+
+  // INSERT - a user signs up as a mentor for the first time
+  // the mentor document id is set to the user's own auth uid, so
+  // "my mentor profile" is always just getMentor(myUid)/streamMentor(myUid)
+  Future<void> becomeMentor({
+    required String uid,
+    required String name,
+    required String specialization,
+    required List<String> subjects,
+    required String availability,
+    required String bio,
+  }) {
+    final mentor = Mentor(
+      id: uid,
+      name: name,
+      specialization: specialization,
+      rating: 0,
+      reviewCount: 0,
+      // brand new mentors start with no rating until their first review
+      isOnline: true,
+      subjects: subjects,
+      availability: availability,
+      bio: bio,
+    );
+    return _mentors.doc(uid).set(mentor.toMap());
+  }
+
+  // UPDATE - lets a mentor edit their own specialisations/about/availability
+  Future<void> updateMentorProfile({
+    required String uid,
+    required String specialization,
+    required List<String> subjects,
+    required String availability,
+    required String bio,
+  }) {
+    return _mentors.doc(uid).update({
+      'specialization': specialization,
+      'subjects': subjects,
+      'availability': availability,
+      'bio': bio,
+    });
+    // rating/reviewCount are never edited by hand - they only change
+    // through recomputeRatingFromReviews() below
+  }
+
+  // UPDATE - recalculates a mentor's rating and review count from every
+  // review they have received, called after a student leaves a new review
+  // (keeps the displayed rating always in sync with real review data)
+  Future<void> recomputeRatingFromReviews({
+    required String mentorId,
+    required double averageRating,
+    required int reviewCount,
+  }) {
+    return _mentors.doc(mentorId).update({
+      'rating': averageRating,
+      'reviewCount': reviewCount,
+    });
+  }
+
   // helper that converts a firestore snapshot into a list of Mentor objects
   List<Mentor> _toMentorList(QuerySnapshot<Map<String, dynamic>> snapshot) {
     return snapshot.docs
@@ -196,6 +263,83 @@ class MentorService {
       subjects: ['ECOMM'],
       availability: 'Thu 3-5pm',
       bio: 'E-commerce project survivor. I can help you plan and build your storefront.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Kai Xuan',
+      specialization: 'Cybersecurity',
+      rating: 4.6,
+      reviewCount: 40,
+      isOnline: true,
+      subjects: ['GSOST', 'DAVA'],
+      availability: 'Mon 6-8pm',
+      bio: 'Pentesting hobbyist. I can make governance and security concepts click.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Priya Sharma',
+      specialization: 'Data',
+      rating: 4.8,
+      reviewCount: 58,
+      isOnline: true,
+      subjects: ['DAVA', 'COMT'],
+      availability: 'Wed 3-5pm',
+      bio: 'Dashboards and data storytelling. I love a messy dataset to clean up.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Benjamin Koh',
+      specialization: 'AI & Machine Learning',
+      rating: 4.5,
+      reviewCount: 27,
+      isOnline: false,
+      subjects: ['LOMA', 'GSOST'],
+      availability: 'Fri 2-4pm',
+      bio: 'Final year AAI student. I break neural networks down into plain English.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Farah Aziz',
+      specialization: 'Development',
+      rating: 4.9,
+      reviewCount: 66,
+      isOnline: true,
+      subjects: ['ECOMM', 'COMT'],
+      availability: 'Tue 4-6pm',
+      bio: 'Built three e-commerce apps for school projects. Ask me anything about Flutter.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Wei Liang',
+      specialization: 'Data',
+      rating: 4.1,
+      reviewCount: 15,
+      isOnline: true,
+      subjects: ['LOMA'],
+      availability: 'Sat 1-3pm',
+      bio: 'Logistics major who is weirdly good at spreadsheets. Happy to tutor.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Aisyah Rahman',
+      specialization: 'Cybersecurity',
+      rating: 4.7,
+      reviewCount: 34,
+      isOnline: true,
+      subjects: ['GSOST', 'ECOMM'],
+      availability: 'Thu 5-7pm',
+      bio: 'Security governance nerd. I make policy readings less painful.',
+    ),
+    Mentor(
+      id: '',
+      name: 'Joel Tan',
+      specialization: 'AI & Machine Learning',
+      rating: 4.0,
+      reviewCount: 9,
+      isOnline: false,
+      subjects: ['DAVA', 'LOMA'],
+      availability: 'Mon 1-3pm',
+      bio: 'Still learning myself, which makes me good at explaining the basics well.',
     ),
   ];
 }

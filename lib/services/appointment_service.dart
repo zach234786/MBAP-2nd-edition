@@ -9,8 +9,12 @@ class AppointmentService {
 //   Insert     -> bookSession
 //   Select all -> streamMySessions
 //   Select one -> getSession
-//   Update     -> updateSession
-//   Delete     -> cancelSession
+//   Update     -> updateSession (also used for the everyday "Cancel
+//                 Session" action, which just sets status to 'Cancelled'
+//                 rather than removing the booking from history)
+//   Delete     -> cancelSession (permanently removes an already-cancelled
+//                 session, see session_detail_screen.dart's "Delete
+//                 Permanently" button)
 
   final CollectionReference<Map<String, dynamic>> _appointments =
       FirebaseFirestore.instance.collection('appointments');
@@ -94,6 +98,18 @@ class AppointmentService {
         .get();
     return result.count ?? 0;
     // count can technically be null so fall back to 0
+  }
+
+  // SELECT with AGGREGATION - counts how many sessions a mentor has run
+  // with one status, eg how many they've completed. shown as the
+  // "N Sessions" badge on a mentor's profile
+  Future<int> countSessionsByMentor(String mentorId, String status) async {
+    final result = await _appointments
+        .where('mentorId', isEqualTo: mentorId)
+        .where('status', isEqualTo: status)
+        .count()
+        .get();
+    return result.count ?? 0;
   }
 
   // turns firestore errors into short messages the user can understand
