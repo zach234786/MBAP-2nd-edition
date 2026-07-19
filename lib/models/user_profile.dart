@@ -29,6 +29,10 @@ class UserProfile {
   // student project, not a real billing system) but remember the
   // cancellation so the profile screen can show "active until end of
   // <month>" instead of the normal active badge
+  final String? themeName;
+  // which AppPalette this account has chosen (matches AppPalette.name,
+  // e.g. 'TP Light') - null means the account never picked one, so the
+  // app falls back to the default palette
 
   UserProfile({
     required this.uid,
@@ -44,6 +48,7 @@ class UserProfile {
     this.onboardingComplete = false,
     this.premiumCancelled = false,
     this.premiumCancelledAt,
+    this.themeName,
   });
 
   bool get isMentor => role.contains('Mentor');
@@ -71,6 +76,7 @@ class UserProfile {
       premiumCancelledAt: data['premiumCancelledAt'] is Timestamp
           ? (data['premiumCancelledAt'] as Timestamp).toDate()
           : null,
+      themeName: data['themeName'] as String?,
     );
   }
 
@@ -91,6 +97,7 @@ class UserProfile {
       'premiumCancelledAt': premiumCancelledAt == null
           ? null
           : Timestamp.fromDate(premiumCancelledAt!),
+      'themeName': themeName,
     };
   }
 }

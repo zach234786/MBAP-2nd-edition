@@ -90,4 +90,10 @@ class UserService {
   Future<void> setRole(String uid, String role) {
     return _users.doc(uid).update({'role': role});
   }
+
+  // saves the user's chosen theme (AppPalette.name) to their profile so it
+  // follows them across logins and devices
+  Future<void> updateTheme(String uid, String themeName) {
+    return _users.doc(uid).update({'themeName': themeName});
+  }
 }
