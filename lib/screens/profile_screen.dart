@@ -532,127 +532,152 @@ class ProfileScreen extends ConsumerWidget {
               border: Border.all(color: AppTheme.darkBorder),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // left side, name and the perks you get
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'TPMentorship',
-                            style: TextStyle(
-                              color: AppTheme.tpRed,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // left side, name and the perks you get
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'TPMentorship',
+                              style: TextStyle(
+                                color: AppTheme.tpRed,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.workspace_premium,
+                                color: Colors.amber, size: 18),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _premiumBullet(
+                            'Priority When booking sessions as a Student.'),
+                        const SizedBox(height: 4),
+                        _premiumBullet(
+                            'Instant Messages without needing to book'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // right side: price and upgrade link, active badge, or the
+                  // cancelled message with the end-of-month date
+                  if (isPremium && premiumCancelled)
+                    SizedBox(
+                      width: 130,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: AppTheme.textSecondary, size: 20),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Membership Cancelled',
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Active until ${_formatDate(_endOfMonth(profile!.premiumCancelledAt ?? DateTime.now()))}',
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 10),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.workspace_premium, color: Colors.amber, size: 18),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      _premiumBullet('Priority When booking sessions as a Student.'),
-                      const SizedBox(height: 4),
-                      _premiumBullet('Instant Messages without needing to book'),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // right side: price and upgrade link, active badge, or the
-                // cancelled message with the end-of-month date
-                if (isPremium && premiumCancelled)
-                  SizedBox(
-                    width: 130,
-                    child: Column(
+                    )
+                  else if (isPremium)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Colors.green, size: 22),
+                            const SizedBox(height: 4),
+                            Text(
+                              'ACTIVE',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () => _confirmCancelPremium(context, ref),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.tpRed,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Cancel Membership',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Icon(Icons.info_outline,
-                            color: AppTheme.textSecondary, size: 20),
-                        const SizedBox(height: 4),
                         Text(
-                          'Membership Cancelled',
-                          textAlign: TextAlign.end,
+                          '\$2.99',
                           style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 11,
+                            color: AppTheme.textPrimary,
+                            fontSize: 20,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
-                          'Active until ${_formatDate(_endOfMonth(profile!.premiumCancelledAt ?? DateTime.now()))}',
-                          textAlign: TextAlign.end,
+                          '/mo',
                           style: TextStyle(
-                              color: AppTheme.textSecondary, fontSize: 10),
+                              color: AppTheme.textSecondary, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: onGoPremium,
+                          // opens the NETS QR payment screen
+                          child: Text(
+                            'Upgrade >',
+                            style: TextStyle(
+                              color: AppTheme.tpRed,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  )
-                else if (isPremium)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Icon(Icons.check_circle,
-                          color: Colors.green, size: 22),
-                      const SizedBox(height: 4),
-                      Text(
-                        'ACTIVE',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      GestureDetector(
-                        onTap: () => _confirmCancelPremium(context, ref),
-                        child: Text(
-                          'Cancel Membership',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 10,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '\$2.99',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      Text(
-                        '/mo',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: onGoPremium,
-                        // opens the NETS QR payment screen
-                        child: Text(
-                          'Upgrade >',
-                          style: TextStyle(
-                            color: AppTheme.tpRed,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -718,7 +743,8 @@ class ProfileScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                  if (!isPremium)
+                    Icon(Icons.chevron_right, color: AppTheme.textSecondary),
                 ],
               ),
             ),
