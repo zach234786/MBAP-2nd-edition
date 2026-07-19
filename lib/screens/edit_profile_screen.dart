@@ -7,6 +7,8 @@ import 'package:tpmentorship/models/user_profile.dart';
 import 'package:tpmentorship/providers/auth_provider.dart';
 import 'package:tpmentorship/providers/data_providers.dart';
 // the app's providers
+import 'package:tpmentorship/services/notification_service.dart';
+// requests the OS notification permission when onboarding opts in
 import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
 import 'package:tpmentorship/utils/snackbar_helper.dart';
@@ -19,8 +21,17 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 // the subjects picked here are what the AI matching feature uses
   final UserProfile profile;
   // the current profile values to pre-fill the form with
+  final bool isOnboarding;
+  // true only for the first-time setup push from main.dart - locks
+  // navigation, requires Subjects, and shows the notifications toggle.
+  // false (default) for the regular Settings > Edit Profile flow, which
+  // stays cancellable exactly as before
 
-  const EditProfileScreen({super.key, required this.profile});
+  const EditProfileScreen({
+    super.key,
+    required this.profile,
+    this.isOnboarding = false,
+  });
 
   @override
   ConsumerState<EditProfileScreen> createState() =>
@@ -43,6 +54,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _saving = false;
   // true while saving, shows the button spinner
+  bool _notificationsEnabled = true;
+  // only shown/used when widget.isOnboarding is true
 
   static const _years = ['Year 1', 'Year 2', 'Year 3'];
 
@@ -75,6 +88,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     // stop if any field is invalid
+    if (widget.isOnboarding && _selectedSubjects.isEmpty) {
+      showAppSnackBar(context, 'Please select at least one subject');
+      return;
+    }
 
     setState(() => _saving = true);
     try {
@@ -90,6 +107,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             bio: bio,
             subjects: _selectedSubjects,
           );
+
+      if (widget.isOnboarding) {
+        await ref
+            .read(userServiceProvider)
+            .updateNotificationsEnabled(widget.profile.uid, _notificationsEnabled);
+        if (_notificationsEnabled) {
+          await NotificationService.instance.requestPermission();
+        }
+      }
 
       // keep the "browse students" directory in sync too, so mentors
       // looking for mentees can find real registered students (not just
@@ -128,163 +154,183 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.darkBg,
-      appBar: AppBar(title: const Text('Edit Profile')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ----- role (read only - changes automatically when you
-                // sign up as a mentor from the Mentor Profile tab) -----
-                _label('Role'),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.tpRed.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: AppTheme.tpRed.withValues(alpha: 0.4)),
-                  ),
-                  child: Text(
-                    widget.profile.role,
-                    style: TextStyle(
-                      color: AppTheme.tpRed,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: !widget.isOnboarding,
+      child: Scaffold(
+        backgroundColor: AppTheme.darkBg,
+        appBar: AppBar(
+          title: const Text('Edit Profile'),
+          automaticallyImplyLeading: !widget.isOnboarding,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ----- role (read only - changes automatically when you
+                  // sign up as a mentor from the Mentor Profile tab) -----
+                  _label('Role'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.tpRed.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppTheme.tpRed.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      widget.profile.role,
+                      style: TextStyle(
+                        color: AppTheme.tpRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // ----- full name -----
-                _label('Full Name'),
-                TextFormField(
-                  controller: _nameController,
-                  style: TextStyle(color: AppTheme.textPrimary),
-                  keyboardType: TextInputType.name,
-                  decoration:
-                      const InputDecoration(hintText: 'Your full name'),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    if (value.trim().length < 2) {
-                      return 'Name must be at least 2 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ----- student id -----
-                _label('Student ID'),
-                TextFormField(
-                  controller: _studentIdController,
-                  style: TextStyle(color: AppTheme.textPrimary),
-                  keyboardType: TextInputType.text,
-                  decoration:
-                      const InputDecoration(hintText: 'e.g. 2501587F'),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your student ID';
-                    }
-                    // TP student ids are 7 digits then a letter
-                    final pattern = RegExp(r'^\d{7}[A-Za-z]$');
-                    if (!pattern.hasMatch(value.trim())) {
-                      return 'Student ID should be 7 digits then a letter';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ----- course -----
-                _label('Course'),
-                TextFormField(
-                  controller: _courseController,
-                  style: TextStyle(color: AppTheme.textPrimary),
-                  keyboardType: TextInputType.text,
-                  decoration: const InputDecoration(
-                      hintText: 'e.g. Diploma in AAI'),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your course';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ----- academic year dropdown -----
-                _label('Academic Year'),
-                DropdownButtonFormField<String>(
-                  initialValue: _academicYear,
-                  dropdownColor: AppTheme.darkCardBg,
-                  style: TextStyle(color: AppTheme.textPrimary),
-                  decoration:
-                      const InputDecoration(hintText: 'Select your year'),
-                  items: _years
-                      .map((y) =>
-                          DropdownMenuItem(value: y, child: Text(y)))
-                      .toList(),
-                  onChanged: (year) => setState(() => _academicYear = year),
-                  validator: (value) =>
-                      value == null ? 'Please select your year' : null,
-                ),
-                const SizedBox(height: 16),
-
-                // ----- bio -----
-                _label('Bio'),
-                TextFormField(
-                  controller: _bioController,
-                  style: TextStyle(color: AppTheme.textPrimary),
-                  keyboardType: TextInputType.multiline,
-                  maxLines: 3,
-                  maxLength: 150,
-                  // the counter under the box is another form of feedback
-                  decoration: InputDecoration(
-                    hintText: 'Tell mentors a little about yourself',
-                    counterStyle:
-                        TextStyle(color: AppTheme.textSecondary),
+                  // ----- full name -----
+                  _label('Full Name'),
+                  TextFormField(
+                    controller: _nameController,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    keyboardType: TextInputType.name,
+                    decoration:
+                        const InputDecoration(hintText: 'Your full name'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your name';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Name must be at least 2 characters';
+                      }
+                      return null;
+                    },
                   ),
-                  // bio is optional - no validator
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 16),
 
-                // ----- subjects the student needs help with -----
-                _label('Subjects I need help with'),
-                Text(
-                  'The AI uses these to recommend your best-fit mentors',
-                  style: TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 11),
-                ),
-                const SizedBox(height: 10),
-                SubjectPicker(
-                  selected: _selectedSubjects,
-                  onChanged: (subjects) =>
-                      setState(() => _selectedSubjects = subjects),
-                ),
-                const SizedBox(height: 24),
+                  // ----- student id -----
+                  _label('Student ID'),
+                  TextFormField(
+                    controller: _studentIdController,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    keyboardType: TextInputType.text,
+                    decoration:
+                        const InputDecoration(hintText: 'e.g. 2501587F'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your student ID';
+                      }
+                      // TP student ids are 7 digits then a letter
+                      final pattern = RegExp(r'^\d{7}[A-Za-z]$');
+                      if (!pattern.hasMatch(value.trim())) {
+                        return 'Student ID should be 7 digits then a letter';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-                // ----- save button with loading spinner -----
-                ElevatedButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : const Text('Save Changes'),
-                ),
-              ],
+                  // ----- course -----
+                  _label('Course'),
+                  TextFormField(
+                    controller: _courseController,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    keyboardType: TextInputType.text,
+                    decoration: const InputDecoration(
+                        hintText: 'e.g. Diploma in AAI'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your course';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ----- academic year dropdown -----
+                  _label('Academic Year'),
+                  DropdownButtonFormField<String>(
+                    initialValue: _academicYear,
+                    dropdownColor: AppTheme.darkCardBg,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    decoration:
+                        const InputDecoration(hintText: 'Select your year'),
+                    items: _years
+                        .map((y) =>
+                            DropdownMenuItem(value: y, child: Text(y)))
+                        .toList(),
+                    onChanged: (year) => setState(() => _academicYear = year),
+                    validator: (value) =>
+                        value == null ? 'Please select your year' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ----- bio -----
+                  _label('Bio'),
+                  TextFormField(
+                    controller: _bioController,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    keyboardType: TextInputType.multiline,
+                    maxLines: 3,
+                    maxLength: 150,
+                    // the counter under the box is another form of feedback
+                    decoration: InputDecoration(
+                      hintText: 'Tell mentors a little about yourself',
+                      counterStyle:
+                          TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    // bio is optional - no validator
+                  ),
+                  const SizedBox(height: 8),
+
+                  // ----- subjects the student needs help with -----
+                  _label('Subjects I need help with'),
+                  Text(
+                    'The AI uses these to recommend your best-fit mentors',
+                    style: TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 11),
+                  ),
+                  const SizedBox(height: 10),
+                  SubjectPicker(
+                    selected: _selectedSubjects,
+                    onChanged: (subjects) =>
+                        setState(() => _selectedSubjects = subjects),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ----- notifications opt-in (onboarding only) -----
+                  if (widget.isOnboarding) ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeThumbColor: AppTheme.tpRed,
+                      value: _notificationsEnabled,
+                      onChanged: (value) =>
+                          setState(() => _notificationsEnabled = value),
+                      title: Text('Enable session reminder notifications',
+                          style: TextStyle(color: AppTheme.textPrimary)),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // ----- save button with loading spinner -----
+                  ElevatedButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : const Text('Save Changes'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
