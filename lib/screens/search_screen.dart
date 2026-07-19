@@ -161,9 +161,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // the hamburger toggle only makes sense for users who can mentor -
-    // a student-only account never needs to browse for mentees
-    final isMentor = ref.watch(isMentorProvider);
     final isStudentMode = _mode == 'student';
 
     return Column(
@@ -192,13 +189,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     ),
                   ),
-                  if (isMentor)
-                    // hamburger menu - only shown once the user has
-                    // signed up as a mentor (role includes "Mentor")
-                    GestureDetector(
-                      onTap: _openModeMenu,
-                      child: Icon(Icons.menu, color: AppTheme.tpRed, size: 24),
-                    ),
+                  GestureDetector(
+                    onTap: _openModeMenu,
+                    child: Icon(Icons.menu, color: AppTheme.tpRed, size: 24),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
