@@ -617,6 +617,10 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                       style: TextStyle(color: AppTheme.textPrimary)),
                   onTap: () async {
                     Navigator.pop(sheetContext);
+                    if (!notificationsEnabled) {
+                      _showSnackBar('Enable notifications first to test');
+                      return;
+                    }
                     await NotificationService.instance
                         .showTestNotification();
                   },
