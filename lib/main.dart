@@ -224,7 +224,8 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
         Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => EditProfileScreen(profile: profile)),
+              builder: (context) =>
+                  EditProfileScreen(profile: profile, isOnboarding: true)),
         );
       });
     });
@@ -469,6 +470,8 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
   void _openSettings() {
     final authService = ref.read(authServiceProvider);
     var reloadStarted = false;
+    var notificationsEnabled =
+        ref.read(userProfileProvider).value?.notificationsEnabled ?? true;
     showModalBottomSheet(
       // opens a bottom sheet to show account settings
       context: context,
@@ -583,6 +586,27 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
                   _openThemePicker();
                 },
               ),
+              if (!kIsWeb)
+                // notifications only exist on mobile so hide this on web
+                SwitchListTile(
+                  secondary: Icon(Icons.notifications_outlined,
+                      color: AppTheme.tpRed),
+                  activeThumbColor: AppTheme.tpRed,
+                  title: Text('Notifications',
+                      style: TextStyle(color: AppTheme.textPrimary)),
+                  value: notificationsEnabled,
+                  onChanged: (value) async {
+                    setSheetState(() => notificationsEnabled = value);
+                    final uid = ref.read(authStateProvider).value?.uid;
+                    if (uid == null) return;
+                    await ref
+                        .read(userServiceProvider)
+                        .updateNotificationsEnabled(uid, value);
+                    if (value) {
+                      await NotificationService.instance.requestPermission();
+                    }
+                  },
+                ),
               if (!kIsWeb)
                 // notifications only exist on mobile so hide this on web
                 ListTile(
