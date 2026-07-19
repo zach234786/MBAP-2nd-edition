@@ -34,8 +34,7 @@ class AppTheme {
 // values when the user picks a different theme in settings, then the
 // whole app rebuilds so every screen picks up the new colours
 
-  // ----- the three palettes the user can pick from -----
-  // (based on the three DALL-E theme concepts explored in Part 1)
+  // ----- the palettes the user can pick from (light and dark) -----
 
   static const AppPalette tpDark = AppPalette(
     name: 'TP Dark',
@@ -62,19 +61,7 @@ class AppTheme {
     textSecondary: Color(0xFF63636B),
   );
 
-  static const AppPalette midnightPurple = AppPalette(
-    name: 'Midnight Purple',
-    isDark: true,
-    accent: Color(0xFF8B5CF6),
-    accentLight: Color(0xFFA78BFA),
-    bg: Color(0xFF120F1C),
-    cardBg: Color(0xFF1C1729),
-    border: Color(0xFF2E2545),
-    textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xFFB3ABC7),
-  );
-
-  static const List<AppPalette> palettes = [tpDark, tpLight, midnightPurple];
+  static const List<AppPalette> palettes = [tpDark, tpLight];
 
   // ----- the colours the whole app reads -----
   // they start as TP Dark and get reassigned by applyPalette()
