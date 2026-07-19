@@ -45,13 +45,18 @@ class NotificationService {
     );
     await _plugin.initialize(settings: initSettings);
 
-    // Android 13+ needs the user to allow notifications (a system popup)
+    _ready = true;
+  }
+
+  // pops the Android 13+ system permission dialog - called only once the
+  // user has actually opted in (onboarding toggle, or later in Settings),
+  // never unconditionally at app launch
+  Future<void> requestPermission() async {
+    if (kIsWeb || !_ready) return;
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
-
-    _ready = true;
   }
 
   // every notification needs a number id - turn the firestore document id
@@ -67,7 +72,10 @@ class NotificationService {
     required String title,
     required String mentorName,
     required DateTime sessionTime,
+    required bool notificationsEnabled,
   }) async {
+    if (!notificationsEnabled) return;
+    // this account has turned notifications off - nothing to schedule
     if (kIsWeb || !_ready) return;
     // web, or init failed - skip quietly
 

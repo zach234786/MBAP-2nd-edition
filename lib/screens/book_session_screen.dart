@@ -157,6 +157,8 @@ class _BookSessionScreenState extends ConsumerState<BookSessionScreen> {
         title: session.title,
         mentorName: session.mentorName,
         sessionTime: sessionDateTime,
+        notificationsEnabled:
+            ref.read(userProfileProvider).value?.notificationsEnabled ?? true,
       );
 
       if (!mounted) return;

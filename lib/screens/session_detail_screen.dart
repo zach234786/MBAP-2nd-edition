@@ -129,6 +129,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         title: updated.title,
         mentorName: updated.mentorName,
         sessionTime: newDateTime,
+        notificationsEnabled:
+            ref.read(userProfileProvider).value?.notificationsEnabled ?? true,
       );
 
       if (!mounted) return;
