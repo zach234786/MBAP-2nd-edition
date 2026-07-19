@@ -44,8 +44,6 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
     // connect to firebase project
   );
-  await ThemeController.loadSavedPalette();
-  // apply the user's saved theme before the first frame draws
   await NotificationService.instance.init();
   // set up local notifications (does nothing on web)
   runApp(const ProviderScope(child: MyApp()));
