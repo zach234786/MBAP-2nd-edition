@@ -199,6 +199,14 @@ class AuthService {
       action: user.delete,
       succeeded: () => _auth.currentUser == null,
     );
+    if (!kIsWeb) {
+      // clear the cached google sign-in session too, otherwise the next
+      // "sign in with google" silently reuses the deleted account instead
+      // of showing the account picker
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {}
+    }
   }
 
   Future<void> signInWithGoogle() async {
