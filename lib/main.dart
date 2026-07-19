@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb; // detect web vs mobile
 import 'package:flutter/material.dart'; // import built in material design package for flutter
 import 'package:firebase_core/firebase_core.dart'; // import firebase core package to initialize firebase
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // import flutter riverpod package for state management
@@ -23,7 +22,7 @@ import 'package:tpmentorship/screens/mentor_profile_screen.dart';
 import 'package:tpmentorship/screens/login_screen.dart';
 import 'package:tpmentorship/screens/register_screen.dart';
 import 'package:tpmentorship/screens/forgot_password_screen.dart';
-import 'package:tpmentorship/screens/change_password_screen.dart';
+import 'package:tpmentorship/screens/settings_screen.dart';
 // part 3 screens
 import 'package:tpmentorship/screens/mentor_detail_screen.dart';
 import 'package:tpmentorship/screens/session_detail_screen.dart';
@@ -371,43 +370,6 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     );
   }
 
-  // lets the user pick one of the app's colour themes (personalisation)
-  void _openThemePicker() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.darkCardBg,
-        title: Text('App Theme',
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 18)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          // one row per available palette
-          children: AppTheme.palettes.map((palette) {
-            final isActive = ref.read(themeProvider).name == palette.name;
-            return ListTile(
-              leading: CircleAvatar(
-                radius: 10,
-                backgroundColor: palette.accent,
-                // little dot previewing the palette's accent colour
-              ),
-              title: Text(palette.name,
-                  style: TextStyle(color: AppTheme.textPrimary)),
-              trailing: isActive
-                  // tick beside whichever theme is currently active
-                  ? Icon(Icons.check, color: AppTheme.tpRed)
-                  : null,
-              onTap: () {
-                ref.read(themeProvider.notifier).setPalette(palette);
-                // apply and save the new theme
-                Navigator.pop(dialogContext);
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
 // show a snackbar with the given message but only if widget is still mounted (not destroyed)
   void _showSnackBar(String message) {
     if (!mounted) return;
@@ -421,230 +383,11 @@ class _MainNavigatorState extends ConsumerState<MainNavigator> {
     });
   }
 
-// show confirmation dialog when deleting acc, then delete after confirming
-  Future<void> _deleteAccount() async {
-    final confirmed = await showDialog<bool>( 
-      // open a dialog to confirm if user wants to delete their account
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.darkCardBg,
-        title: Text(
-          // title
-          'Delete Account',
-          style: TextStyle(color: AppTheme.textPrimary),
-        ),
-        content: Text(
-          // content 
-          'This permanently deletes your account. This cannot be undone.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            // cancel button
-            child: Text('Cancel',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            // delete button
-            child: Text('Delete',
-                style: TextStyle(
-                    color: AppTheme.tpRed, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    // stop here if user cancels the dialog
-
-    try {
-      await ref.read(authServiceProvider).deleteAccount();
-      // call from auth service to delete the account
-    } catch (e) {
-      if (mounted) _showSnackBar(AuthService.friendlyError(e));
-      // show error message if there is an error deleting the account
-    }
-  }
-  // open settings button in the profile screen
+  // opens the dedicated account settings screen
   void _openSettings() {
-    final authService = ref.read(authServiceProvider);
-    var reloadStarted = false;
-    var notificationsEnabled =
-        ref.read(userProfileProvider).value?.notificationsEnabled ?? true;
-    showModalBottomSheet(
-      // opens a bottom sheet to show account settings
-      context: context,
-      backgroundColor: AppTheme.darkCardBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          // StatefulBuilder allows the bottom sheet to rebuild when the state changes (when email becomes verfied)
-          builder: (context, setSheetState) {
-            if (!reloadStarted) {
-              // if reload has not started, start it and reload the user to check if email is verified
-              reloadStarted = true;
-              authService.reloadUser().then((_) {
-                if (sheetContext.mounted) setSheetState(() {});
-                // rebuilds the bottom sheet when new data arrives (email verfication)
-              }).catchError((_) {});
-            }
-            return SafeArea(
-              child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Account Settings',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Icon(Icons.lock_reset, color: AppTheme.tpRed),
-                title: Text('Change Password',
-                // change password button, only available for email/password accounts
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  if (!authService.isEmailPasswordAccount) {
-                    _showSnackBar('Only available for email/password accounts');
-                    // show snackbar if user is not using email/password account
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangePasswordScreen(
-                          onForgotPassword: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ForgotPasswordScreen(
-                                  backLabel: 'Back',
-                                  onGoToLogin: () => Navigator.pop(context),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile( 
-                // email verification button
-                leading: Icon(
-                  authService.isEmailVerified
-                      ? Icons.verified
-                      : Icons.mark_email_unread,
-                  color: AppTheme.tpRed,
-                ),
-                title: Text(
-                  authService.isEmailVerified
-                  // different states of the email verification button depending on if the email is verified or not
-                      ? 'Email Verified'
-                      : 'Resend Verification Email',
-                  style: TextStyle(color: AppTheme.textPrimary),
-                ),
-                onTap: () async {
-                  // different outputs depending on the user
-                  Navigator.pop(sheetContext);
-                  if (!authService.isEmailPasswordAccount) {
-                    _showSnackBar('Only available for email/password accounts');
-                    // if account is signed in with google/git, skip
-                  } else if (authService.isEmailVerified) {
-                    _showSnackBar('Your email is already verified!');
-                    // if email is already verified, skip
-                  } else {
-                    try {
-                      await authService.sendEmailVerification();
-                      _showSnackBar('Verification email sent!');
-                      // if email not verified send email
-                    } catch (e) {
-                      _showSnackBar(AuthService.friendlyError(e));
-                    }
-                  }
-                },
-              ),
-              ListTile(
-                // theme picker (part 3 personalisation)
-                leading: Icon(Icons.palette_outlined, color: AppTheme.tpRed),
-                title: Text('App Theme',
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                subtitle: Text(ref.read(themeProvider).name,
-                    style: TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _openThemePicker();
-                },
-              ),
-              if (!kIsWeb)
-                // notifications only exist on mobile so hide this on web
-                SwitchListTile(
-                  secondary: Icon(Icons.notifications_outlined,
-                      color: AppTheme.tpRed),
-                  activeThumbColor: AppTheme.tpRed,
-                  title: Text('Notifications',
-                      style: TextStyle(color: AppTheme.textPrimary)),
-                  value: notificationsEnabled,
-                  onChanged: (value) async {
-                    setSheetState(() => notificationsEnabled = value);
-                    final uid = ref.read(authStateProvider).value?.uid;
-                    if (uid == null) return;
-                    await ref
-                        .read(userServiceProvider)
-                        .updateNotificationsEnabled(uid, value);
-                    if (value) {
-                      await NotificationService.instance.requestPermission();
-                    }
-                  },
-                ),
-              if (!kIsWeb)
-                // notifications only exist on mobile so hide this on web
-                ListTile(
-                  // fires a sample notification to demo the feature
-                  leading: Icon(Icons.notifications_active_outlined,
-                      color: AppTheme.tpRed),
-                  title: Text('Test Notification',
-                      style: TextStyle(color: AppTheme.textPrimary)),
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    if (!notificationsEnabled) {
-                      _showSnackBar('Enable notifications first to test');
-                      return;
-                    }
-                    await NotificationService.instance
-                        .showTestNotification();
-                  },
-                ),
-              ListTile(
-                // delete account button
-                leading:
-                    Icon(Icons.delete_forever, color: AppTheme.tpRed),
-                title: Text(
-                  'Delete Account',
-                  style: TextStyle(color: AppTheme.tpRed),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _deleteAccount();
-                },
-              ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
   }
 
