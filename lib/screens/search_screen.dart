@@ -13,6 +13,8 @@ import 'package:tpmentorship/screens/student_list_screen.dart';
 // the filtered results screens
 import 'package:tpmentorship/theme/app_theme.dart';
 // app colours and styling
+import 'package:tpmentorship/utils/snackbar_helper.dart';
+// shared snackbar styling used across the app
 import 'package:tpmentorship/widgets/mentor_card.dart';
 import 'package:tpmentorship/widgets/student_card.dart';
 // the small card widgets
@@ -101,9 +103,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  // opens the menu letting a user with the Mentor role switch between
-  // browsing for mentors and browsing for students
+  // opens the menu letting a user switch between browsing for mentors and
+  // browsing for students - the student option is shown to everyone for
+  // header consistency, but stays locked until the user has signed up as
+  // a mentor (isMentorProvider)
   void _openModeMenu() {
+    final isMentor = ref.read(isMentorProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.darkCardBg,
@@ -135,27 +140,50 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   Navigator.pop(sheetContext);
                 },
               ),
-              ListTile(
-                leading: Icon(Icons.people, color: AppTheme.tpRed),
-                title: Text('A Student to Mentor',
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                trailing: _mode == 'student'
-                    ? Icon(Icons.check, color: AppTheme.tpRed)
-                    : null,
-                onTap: () {
-                  setState(() {
-                    _mode = 'student';
-                    _query = '';
-                    _searchController.clear();
-                  });
-                  Navigator.pop(sheetContext);
-                },
-              ),
+              _buildStudentModeTile(isMentor, sheetContext),
               const SizedBox(height: 8),
             ],
           ),
         );
       },
+    );
+  }
+
+  // the "A Student to Mentor" row - greyed out with a lock icon and a
+  // tooltip when the user hasn't signed up as a mentor yet; tapping it
+  // while locked shows a snackbar instead of switching mode
+  Widget _buildStudentModeTile(bool isMentor, BuildContext sheetContext) {
+    final tile = ListTile(
+      leading: Icon(Icons.people,
+          color: isMentor ? AppTheme.tpRed : AppTheme.textSecondary),
+      title: Text('A Student to Mentor',
+          style: TextStyle(
+              color:
+                  isMentor ? AppTheme.textPrimary : AppTheme.textSecondary)),
+      trailing: !isMentor
+          ? Icon(Icons.lock_outline, color: AppTheme.textSecondary)
+          : (_mode == 'student'
+              ? Icon(Icons.check, color: AppTheme.tpRed)
+              : null),
+      onTap: () {
+        if (!isMentor) {
+          showAppSnackBar(context, 'Sign up as a mentor to unlock this');
+          return;
+          // sheet stays open - this is not a valid selection yet
+        }
+        setState(() {
+          _mode = 'student';
+          _query = '';
+          _searchController.clear();
+        });
+        Navigator.pop(sheetContext);
+      },
+    );
+
+    if (isMentor) return tile;
+    return Tooltip(
+      message: 'Sign up as a mentor to unlock this',
+      child: tile,
     );
   }
 
