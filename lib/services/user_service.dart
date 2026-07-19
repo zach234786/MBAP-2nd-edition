@@ -96,4 +96,9 @@ class UserService {
   Future<void> updateTheme(String uid, String themeName) {
     return _users.doc(uid).update({'themeName': themeName});
   }
+
+  // saves whether this account wants session reminder notifications
+  Future<void> updateNotificationsEnabled(String uid, bool enabled) {
+    return _users.doc(uid).update({'notificationsEnabled': enabled});
+  }
 }

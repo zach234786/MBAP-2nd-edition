@@ -34,4 +34,37 @@ void main() {
       expect(profile.themeName, isNull);
     });
   });
+
+  group('UserProfile notificationsEnabled', () {
+    test('defaults to true when not provided', () {
+      final profile = UserProfile(
+        uid: 'u1',
+        fullName: 'Ada',
+        createdAt: DateTime(2026, 1, 1),
+      );
+      expect(profile.notificationsEnabled, isTrue);
+    });
+
+    test('round-trips through toMap/fromMap', () {
+      final profile = UserProfile(
+        uid: 'u1',
+        fullName: 'Ada',
+        createdAt: DateTime(2026, 1, 1),
+        notificationsEnabled: false,
+      );
+
+      final rebuilt = UserProfile.fromMap(profile.toMap(), profile.uid);
+
+      expect(rebuilt.notificationsEnabled, isFalse);
+    });
+
+    test('fromMap defaults to true when the field is missing', () {
+      final profile = UserProfile.fromMap({
+        'fullName': 'Ada',
+        'createdAt': null,
+      }, 'u1');
+
+      expect(profile.notificationsEnabled, isTrue);
+    });
+  });
 }

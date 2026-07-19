@@ -33,6 +33,9 @@ class UserProfile {
   // which AppPalette this account has chosen (matches AppPalette.name,
   // e.g. 'TP Light') - null means the account never picked one, so the
   // app falls back to the default palette
+  final bool notificationsEnabled;
+  // whether this account wants session reminder notifications - set
+  // during onboarding (defaults to true), reconfigurable in Settings
 
   UserProfile({
     required this.uid,
@@ -49,6 +52,7 @@ class UserProfile {
     this.premiumCancelled = false,
     this.premiumCancelledAt,
     this.themeName,
+    this.notificationsEnabled = true,
   });
 
   bool get isMentor => role.contains('Mentor');
@@ -77,6 +81,7 @@ class UserProfile {
           ? (data['premiumCancelledAt'] as Timestamp).toDate()
           : null,
       themeName: data['themeName'] as String?,
+      notificationsEnabled: (data['notificationsEnabled'] ?? true) as bool,
     );
   }
 
@@ -98,6 +103,7 @@ class UserProfile {
           ? null
           : Timestamp.fromDate(premiumCancelledAt!),
       'themeName': themeName,
+      'notificationsEnabled': notificationsEnabled,
     };
   }
 }
